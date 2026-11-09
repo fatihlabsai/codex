@@ -6,3 +6,5 @@ node_modules/
 package*.json
 .DS_Store
 drive-prompt.txt
+camera-fix-prompt.txt
+camera-fix-2-prompt.txt
