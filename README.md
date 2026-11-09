@@ -12,9 +12,12 @@ An internet connection is required to load Three.js and OrbitControls from the C
 
 - **Drag:** orbit. **Right-drag:** pan. **Scroll:** zoom.
 - **Touch:** one finger to orbit; two fingers to pan or pinch to zoom.
-- **Click a building:** see its generated name, floor count, and type. Click empty space or × to close.
-- **Passage of time:** pause at 0× or accelerate up to 5×; affects both traffic and the clock.
-- **Regenerate City:** create a fresh seeded layout while keeping your camera and time of day.
+- **Click any car:** take control; a mint ring highlights it and the Driving panel shows speed. A smooth chase camera follows while orbit controls are disabled.
+- **WASD / arrow keys:** W / ↑ accelerates, S / ↓ brakes and reverses, A D / ← → steers. Building footprints and the island edge block driving; AI traffic brakes for your car ahead.
+- **Esc / Exit car:** return the car to the nearest clear AI lane and restore your previous orbit camera.
+- **Click a building (when not driving):** see its generated name, floor count, and type. Click empty space or × to close.
+- **Passage of time:** pause at 0× or accelerate up to 5×; affects AI traffic and the clock. Player driving remains at normal speed, even at 0×.
+- **Regenerate City:** create a fresh seeded layout while keeping your orbit camera and time of day; exits driving cleanly first.
 
 A full day takes about 6 minutes 40 seconds at 1×. Traffic uses right-hand lanes and coordinated green, yellow, and all-red clearance phases. Instanced buildings, windows, cars, and street furniture keep rendering economical.
 

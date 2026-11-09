@@ -8,6 +8,7 @@
 <link rel="icon" href="data:,">
 <style>
 *{box-sizing:border-box}body{margin:0;overflow:hidden;background:#101c25;color:#eef5f3;font:14px/1.5 system-ui,sans-serif}canvas{display:block;touch-action:none}button,input{font:inherit}button{cursor:pointer;color:inherit;background:#ffffff0d;border:1px solid #ffffff24;border-radius:10px;padding:10px 14px}button:hover{background:#ffffff20}button:focus-visible,input:focus-visible{outline:2px solid #91e7c1;outline-offset:4px}.glass{background:#101c25e8;border:1px solid #ffffff19;box-shadow:0 12px 40px #0003;backdrop-filter:blur(18px);border-radius:18px}header{position:absolute;top:24px;left:24px;padding:19px 24px;pointer-events:none}h1{font-size:28px;letter-spacing:-1px;margin:0}h1 span{color:#9ee6bc}p{margin:4px 0;color:#aebfc7}.eyebrow{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#9ee6bc}.controls{position:absolute;bottom:24px;left:24px;width:310px;padding:20px}.clock{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}time{font-size:30px;font-variant-numeric:tabular-nums;letter-spacing:-1px}#period{color:#9ee6bc;font-size:12px}label{display:flex;justify-content:space-between;color:#b9c8ce;font-size:12px}input{width:100%;accent-color:#9ee6bc;margin:14px 0 18px}.controls button{width:100%}.hint{position:absolute;right:24px;bottom:24px;color:#d2dfe3;font-size:12px;text-align:right;text-shadow:0 1px 5px #000}.info{position:absolute;right:24px;top:24px;width:270px;padding:22px}.info h2{font-size:22px;margin:12px 0 16px}.info button{position:absolute;right:12px;top:10px;padding:3px 10px}.stats{display:flex;gap:36px}.stats strong{display:block;font-size:18px}.stats span{color:#aebfc7;font-size:11px;text-transform:uppercase;letter-spacing:1px}#status{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:20px;max-width:90vw;text-align:center}[hidden]{display:none!important}@media(max-width:600px){header{top:12px;left:12px;padding:12px 18px}h1{font-size:24px}header p{font-size:11px}.controls{left:12px;bottom:12px;width:240px;padding:14px}.clock{margin-bottom:8px}.hint{right:12px;bottom:12px;max-width:90px;font-size:10px}.info{top:120px;right:12px;width:240px}input{margin:8px 0 12px}}
+.driving{position:absolute;right:24px;top:24px;width:270px;padding:20px}.driving h2{margin:0}.driving .readout{font-size:32px;color:#9ee6bc;font-variant-numeric:tabular-nums}.driving button{width:100%;margin-top:12px}@media(max-width:600px){.driving{top:110px;right:12px;width:220px}}
 </style>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}
@@ -26,7 +27,8 @@
 <div class="eyebrow">Around the neighborhood</div><h2 id="name"></h2>
 <div class="stats"><div><strong id="floors"></strong><span>Floors</span></div><div><strong id="type"></strong><span>Building type</span></div></div>
 </aside>
-<div class="hint">Drag to orbit · Scroll to zoom<br>Right-drag to pan · Select a building</div>
+<aside id="driving" class="driving glass" hidden aria-label="Driving controls"><div class="eyebrow">You’re at the wheel</div><h2>Driving</h2><div class="readout"><span id="driveSpeed">0</span> km/h</div><p>W / ↑ accelerate · S / ↓ brake / reverse<br>A D / ← → steer</p><p>Chase camera · Esc to exit</p><button id="exitDrive">Exit car</button></aside>
+<div class="hint">Drag to orbit · Scroll to zoom<br>Right-drag to pan · Click a car to drive<br>Select a building to explore</div>
 <div id="status" class="glass" role="status">Growing your city…</div>
 <script type="module">
 const $ = id => document.getElementById(id);
@@ -115,6 +117,7 @@ try {
     return mesh;
   }
   function regenerate() {
+    exitDriving();
     if (city) {
       scene.remove(city);
       city.traverse(object => { if (object.isInstancedMesh) object.dispose(); });
@@ -197,40 +200,142 @@ try {
     }
     const items = cars.map(c => ({ x: 0, y: 0, z: 0, w: 1, h: 1, d: 1, color: c.color }));
     city.userData.carMeshes = ['car', 'glass', 'head'].map(kind => makeBatch(kind, items.map(item => ({ ...item, color: kind === 'car' ? item.color : 0xffffff })), true));
-    updateCars(0);
+    updateCars(0); renderCars();
   }
   // Each axis gets green, yellow and an all-red clearance interval.
   function phase(axis) {
     const t = (elapsed + (axis ? 12 : 0)) % cycle;
     return t < 8 ? 2 : t < 10 ? 1 : 0;
   }
+  let player = null, steering = 0;
+  const keys = new Set();
+  const savedCamera = new THREE.Vector3(), savedTarget = new THREE.Vector3();
+  const chasePosition = new THREE.Vector3(), chaseTarget = new THREE.Vector3();
+  const marker = new THREE.Mesh(new THREE.RingGeometry(1.9, 2.12, 40), new THREE.MeshBasicMaterial({ color: 0x9ee6bc, side: THREE.DoubleSide, depthWrite: false }));
+  marker.rotation.x = -Math.PI / 2;
+  marker.visible = false;
+  scene.add(marker);
+  function lanePose(car) {
+    car.x = car.axis === 0 ? car.p : car.road - car.sign * lane;
+    car.z = car.axis === 0 ? car.road + car.sign * lane : car.p;
+    car.heading = car.axis === 0 ? car.sign * Math.PI / 2 : car.sign === 1 ? 0 : Math.PI;
+  }
+  function enterDriving(car) {
+    if (player) return;
+    player = car; steering = 0; keys.clear();
+    savedCamera.copy(camera.position); savedTarget.copy(controls.target);
+    controls.enabled = false;
+    selected = null; outline.visible = false; $('info').hidden = true;
+    $('driving').hidden = false; marker.visible = true;
+    $('driveSpeed').textContent = Math.round(Math.abs(car.velocity) * 3.6);
+    renderer.domElement.focus({ preventScroll: true });
+  }
+  function exitDriving() {
+    if (!player) return;
+    // Rejoin a clear lane even if the player left the road network.
+    let best = null, score = Infinity;
+    for (const axis of [0, 1]) for (const road of roads) for (const sign of [-1, 1]) {
+      for (let p = -72; p <= 72; p += 3) {
+        const x = axis === 0 ? p : road - sign * lane;
+        const z = axis === 0 ? road + sign * lane : p;
+        const distance = (x - player.x) ** 2 + (z - player.z) ** 2;
+        if (distance >= score || cars.some(c => c !== player && Math.hypot(c.x - x, c.z - z) < 5)) continue;
+        score = distance; best = { axis, road, sign, p };
+      }
+    }
+    if (best) Object.assign(player, best);
+    player.velocity = 0; lanePose(player);
+    player = null; keys.clear(); marker.visible = false; $('driving').hidden = true;
+    camera.position.copy(savedCamera); controls.target.copy(savedTarget);
+    controls.enableDamping = false; controls.enabled = true; controls.update(); controls.enableDamping = true;
+    renderCars();
+  }
+  const drivingKeys = new Set(['KeyW', 'KeyS', 'KeyA', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+  renderer.domElement.tabIndex = 0;
+  addEventListener('keydown', event => {
+    if (!player) return;
+    if (event.code === 'Escape') { event.preventDefault(); exitDriving(); return; }
+    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLButtonElement) return;
+    if (drivingKeys.has(event.code)) { event.preventDefault(); keys.add(event.code); }
+  });
+  addEventListener('keyup', event => { keys.delete(event.code); });
+  addEventListener('blur', () => keys.clear());
+  document.addEventListener('visibilitychange', () => keys.clear());
+  $('exitDrive').onclick = exitDriving;
+  function blocked(x, z) {
+    const radius = 1.65; // Protect all body corners at every heading.
+    if (Math.hypot(x, z) > 102) return true;
+    return buildings.userData.items.some(b => {
+      const dx = Math.max(Math.abs(x - b.x) - b.w / 2, 0);
+      const dz = Math.max(Math.abs(z - b.z) - b.d / 2, 0);
+      return dx * dx + dz * dz < radius * radius;
+    });
+  }
+  function updateDriving(dt) {
+    if (!player) return;
+    const throttle = Number(keys.has('KeyW') || keys.has('ArrowUp')) - Number(keys.has('KeyS') || keys.has('ArrowDown'));
+    const turn = Number(keys.has('KeyA') || keys.has('ArrowLeft')) - Number(keys.has('KeyD') || keys.has('ArrowRight'));
+    steering = THREE.MathUtils.damp(steering, turn, 9, dt);
+    const braking = throttle && Math.sign(player.velocity) !== throttle;
+    if (throttle) player.velocity += throttle * (braking ? 22 : 9) * dt;
+    else player.velocity = THREE.MathUtils.damp(player.velocity, 0, 1.6, dt);
+    player.velocity = THREE.MathUtils.clamp(player.velocity, -7, 18);
+    player.heading += steering * player.velocity / 3.8 * 0.48 * dt;
+    const dx = Math.sin(player.heading) * player.velocity * dt;
+    const dz = Math.cos(player.heading) * player.velocity * dt;
+    let collision = false;
+    if (!blocked(player.x + dx, player.z)) player.x += dx; else collision = true;
+    if (!blocked(player.x, player.z + dz)) player.z += dz; else collision = true;
+    if (collision) player.velocity *= Math.exp(-12 * dt);
+  }
+  function updateChase(dt) {
+    if (!player) return;
+    const fx = Math.sin(player.heading), fz = Math.cos(player.heading);
+    chasePosition.set(player.x - fx * 12, 8, player.z - fz * 12);
+    chaseTarget.set(player.x + fx * 4, 1.1, player.z + fz * 4);
+    camera.position.lerp(chasePosition, 1 - Math.exp(-5 * dt));
+    controls.target.lerp(chaseTarget, 1 - Math.exp(-7 * dt));
+    camera.lookAt(controls.target);
+    marker.position.set(player.x, 0.13, player.z);
+    $('driveSpeed').textContent = Math.round(Math.abs(player.velocity) * 3.6);
+  }
   function updateCars(dt) {
     const proposals = cars.map(car => {
+      if (car === player) return 0;
       let distance = Infinity;
       for (const crossing of roads) {
         const toLine = (crossing - car.p) * car.sign - 6.2;
         if (phase(car.axis) !== 2 && toLine >= -0.02) distance = Math.min(distance, Math.max(0, toLine));
       }
       for (const other of cars) {
-        if (other === car || other.axis !== car.axis || other.road !== car.road || other.sign !== car.sign) continue;
+        if (other === car || other === player || other.axis !== car.axis || other.road !== car.road || other.sign !== car.sign) continue;
         const gap = ((other.p - car.p) * car.sign + edge * 2) % (edge * 2);
         distance = Math.min(distance, Math.max(0, gap - 4.4));
+      }
+      if (player) {
+        const ahead = ((car.axis === 0 ? player.x : player.z) - car.p) * car.sign;
+        const lateral = Math.abs((car.axis === 0 ? player.z : player.x) - (car.road + (car.axis === 0 ? 1 : -1) * car.sign * lane));
+        if (ahead > 0 && lateral < 2.7) distance = Math.min(distance, Math.max(0, ahead - 5));
       }
       const target = Math.min(7, Math.sqrt(2 * 9 * distance));
       car.velocity += Math.max(-18 * dt, Math.min(5 * dt, target - car.velocity));
       return Math.min(distance, Math.max(0, car.velocity * dt));
     });
     cars.forEach((car, i) => {
+      if (car === player) return;
       car.p += car.sign * proposals[i];
       if (car.p > edge) car.p -= edge * 2;
       if (car.p < -edge) car.p += edge * 2;
-      const x = car.axis === 0 ? car.p : car.road - car.sign * lane;
-      const z = car.axis === 0 ? car.road + car.sign * lane : car.p;
-      const rotation = car.axis === 0 ? car.sign * Math.PI / 2 : car.sign === 1 ? 0 : Math.PI;
+      lanePose(car);
+    });
+  }
+  function renderCars() {
+    cars.forEach((car, i) => {
+      const { x, z, heading: rotation } = car;
       const parts = [
         { x, y: 0.65, z, w: 1.45, h: 0.8, d: 2.9, rotation },
         { x, y: 1.18, z, w: 1.23, h: 0.55, d: 1.45, rotation },
-        { x: x + (car.axis === 0 ? car.sign * 1.46 : 0), y: 0.68, z: z + (car.axis === 1 ? car.sign * 1.46 : 0), w: 1.15, h: 0.2, d: 0.04, rotation }
+        { x: x + Math.sin(rotation) * 1.46, y: 0.68, z: z + Math.cos(rotation) * 1.46, w: 1.15, h: 0.2, d: 0.04, rotation }
       ];
       parts.forEach((part, j) => city.userData.carMeshes[j].setMatrixAt(i, matrix(part)));
     });
@@ -270,10 +375,13 @@ try {
   let down = null;
   renderer.domElement.addEventListener('pointerdown', event => { down = { x: event.clientX, y: event.clientY, button: event.button }; });
   renderer.domElement.addEventListener('pointerup', event => {
+    if (player) return;
     if (!down || down.button !== 0 || Math.hypot(event.clientX - down.x, event.clientY - down.y) > 5) return;
     pointer.set(event.clientX / innerWidth * 2 - 1, 1 - event.clientY / innerHeight * 2);
     raycaster.setFromCamera(pointer, camera);
-    const hit = raycaster.intersectObject(buildings)[0];
+    city.userData.carMeshes.forEach(mesh => mesh.computeBoundingSphere());
+    const hit = raycaster.intersectObjects([buildings, ...city.userData.carMeshes])[0];
+    if (hit && hit.object !== buildings) { enterDriving(cars[hit.instanceId]); return; }
     $('info').hidden = !hit;
     outline.visible = !!hit;
     if (!hit) { selected = null; return; }
@@ -284,6 +392,7 @@ try {
     const bounds = new THREE.Box3(new THREE.Vector3(selected.x - selected.w / 2, 0.4, selected.z - selected.d / 2), new THREE.Vector3(selected.x + selected.w / 2, selected.h + 0.4, selected.z + selected.d / 2));
     outline.box.copy(bounds);
   });
+  renderer.domElement.addEventListener('pointercancel', () => { down = null; });
   $('close').onclick = () => { $('info').hidden = true; outline.visible = false; selected = null; };
   $('speed').oninput = event => { speed = Number(event.target.value); $('speedValue').value = `${speed}×`; };
   $('regenerate').onclick = regenerate;
@@ -298,7 +407,13 @@ try {
   $('status').hidden = true;
   let last = performance.now();
   renderer.setAnimationLoop(now => {
-    const dt = Math.min((now - last) / 1000, 0.1) * speed; last = now;
+    const realDt = Math.min((now - last) / 1000, 0.1);
+    const dt = realDt * speed; last = now;
+    let drivingTime = realDt;
+    while (drivingTime > 0) {
+      const step = Math.min(drivingTime, 1 / 60);
+      updateDriving(step); drivingTime -= step;
+    }
     // Small simulation steps prevent fast-forward from skipping stop lines.
     let remaining = dt;
     while (remaining > 0) {
@@ -306,7 +421,9 @@ try {
       elapsed += step; updateCars(step); remaining -= step;
     }
     hour = (hour + dt * 0.06) % 24;
-    updateSky(); controls.update(); renderer.render(scene, camera);
+    renderCars(); updateSky();
+    if (player) updateChase(realDt); else controls.update();
+    renderer.render(scene, camera);
   });
 } catch (error) {
   $('status').hidden = false;
