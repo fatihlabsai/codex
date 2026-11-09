@@ -1,0 +1,7 @@
+prompt.txt
+prompt-with-preface.txt
+*.log
+*.png
+node_modules/
+package*.json
+.DS_Store

@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101c25">
+<title>Astra City — A little world in motion</title>
+<link rel="icon" href="data:,">
+<style>
+*{box-sizing:border-box}body{margin:0;overflow:hidden;background:#101c25;color:#eef5f3;font:14px/1.5 system-ui,sans-serif}canvas{display:block;touch-action:none}button,input{font:inherit}button{cursor:pointer;color:inherit;background:#ffffff0d;border:1px solid #ffffff24;border-radius:10px;padding:10px 14px}button:hover{background:#ffffff20}button:focus-visible,input:focus-visible{outline:2px solid #91e7c1;outline-offset:4px}.glass{background:#101c25e8;border:1px solid #ffffff19;box-shadow:0 12px 40px #0003;backdrop-filter:blur(18px);border-radius:18px}header{position:absolute;top:24px;left:24px;padding:19px 24px;pointer-events:none}h1{font-size:28px;letter-spacing:-1px;margin:0}h1 span{color:#9ee6bc}p{margin:4px 0;color:#aebfc7}.eyebrow{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#9ee6bc}.controls{position:absolute;bottom:24px;left:24px;width:310px;padding:20px}.clock{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}time{font-size:30px;font-variant-numeric:tabular-nums;letter-spacing:-1px}#period{color:#9ee6bc;font-size:12px}label{display:flex;justify-content:space-between;color:#b9c8ce;font-size:12px}input{width:100%;accent-color:#9ee6bc;margin:14px 0 18px}.controls button{width:100%}.hint{position:absolute;right:24px;bottom:24px;color:#d2dfe3;font-size:12px;text-align:right;text-shadow:0 1px 5px #000}.info{position:absolute;right:24px;top:24px;width:270px;padding:22px}.info h2{font-size:22px;margin:12px 0 16px}.info button{position:absolute;right:12px;top:10px;padding:3px 10px}.stats{display:flex;gap:36px}.stats strong{display:block;font-size:18px}.stats span{color:#aebfc7;font-size:11px;text-transform:uppercase;letter-spacing:1px}#status{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:20px;max-width:90vw;text-align:center}[hidden]{display:none!important}@media(max-width:600px){header{top:12px;left:12px;padding:12px 18px}h1{font-size:24px}header p{font-size:11px}.controls{left:12px;bottom:12px;width:240px;padding:14px}.clock{margin-bottom:8px}.hint{right:12px;bottom:12px;max-width:90px;font-size:10px}.info{top:120px;right:12px;width:240px}input{margin:8px 0 12px}}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<header class="glass"><div class="eyebrow">An urban miniature</div><h1>Astra <span>City</span></h1><p>A little world. An endless ordinary day.</p></header>
+<section class="controls glass" aria-label="Simulation controls">
+<div class="clock"><time id="time">08:00</time><span id="period">Morning</span></div>
+<label for="speed">Passage of time <output id="speedValue">1×</output></label>
+<input id="speed" type="range" min="0" max="5" step="0.25" value="1" aria-label="Simulation speed">
+<button id="regenerate">↻ &nbsp; Regenerate City</button>
+</section>
+<aside id="info" class="info glass" hidden aria-label="Building information" aria-live="polite">
+<button id="close" aria-label="Close building information">×</button>
+<div class="eyebrow">Around the neighborhood</div><h2 id="name"></h2>
+<div class="stats"><div><strong id="floors"></strong><span>Floors</span></div><div><strong id="type"></strong><span>Building type</span></div></div>
+</aside>
+<div class="hint">Drag to orbit · Scroll to zoom<br>Right-drag to pan · Select a building</div>
+<div id="status" class="glass" role="status">Growing your city…</div>
+<script type="module">
+const $ = id => document.getElementById(id);
+try {
+  const THREE = await import('three');
+  const { OrbitControls } = await import('three/addons/controls/OrbitControls.js');
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color();
+  scene.fog = new THREE.FogExp2(0xa7c8d5, 0.0034);
+  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
+  document.body.prepend(renderer.domElement);
+  renderer.domElement.setAttribute('aria-label', 'Interactive three-dimensional city');
+  const camera = new THREE.PerspectiveCamera(43, innerWidth / innerHeight, 0.5, 600);
+  camera.position.set(112, 112, 137);
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 5, 0);
+  controls.enableDamping = true;
+  controls.minDistance = 25;
+  controls.maxDistance = 260;
+  controls.maxPolarAngle = Math.PI * 0.47;
+  const hemi = new THREE.HemisphereLight(0xbde4ff, 0x536147, 2);
+  scene.add(hemi);
+  const sunlight = new THREE.DirectionalLight(0xffe4b5, 3);
+  sunlight.castShadow = true;
+  sunlight.shadow.mapSize.set(2048, 2048);
+  Object.assign(sunlight.shadow.camera, { left: -90, right: 90, top: 90, bottom: -90, near: 1, far: 300 });
+  sunlight.shadow.normalBias = 0.08;
+  scene.add(sunlight);
+  const moonlight = new THREE.DirectionalLight(0x95bbff, 0.3);
+  scene.add(moonlight);
+  const box = new THREE.BoxGeometry(1, 1, 1);
+  const sphere = new THREE.IcosahedronGeometry(1, 1);
+  const material = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.85, ...extra });
+  const mats = {
+    building: material(0xffffff), road: material(0x37434b), sidewalk: material(0xb4b9af),
+    grass: material(0x6c9577), trim: material(0x566771), leaf: material(0x54836a),
+    pole: material(0x303e49), line: material(0xe4ddbe), car: material(0xffffff),
+    glass: material(0x253d50, { metalness: 0.35, roughness: 0.25 }),
+    window: material(0x526f80, { emissive: 0xffd698, emissiveIntensity: 0 }),
+    lamp: material(0xffedbf, { emissive: 0xffd18c, emissiveIntensity: 0 }),
+    head: material(0xfff4d4, { emissive: 0xffe0a3, emissiveIntensity: 0 }),
+    red: new THREE.MeshBasicMaterial({ color: 0xff3434 }),
+    yellow: new THREE.MeshBasicMaterial({ color: 0xffc33b }),
+    green: new THREE.MeshBasicMaterial({ color: 0x62ffab })
+  };
+  const ground = new THREE.Mesh(new THREE.CylinderGeometry(106, 108, 2, 64), mats.grass);
+  ground.position.y = -1.2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+  const sun = new THREE.Mesh(sphere, new THREE.MeshBasicMaterial({ color: 0xffe7ad }));
+  sun.scale.setScalar(5);
+  const moon = new THREE.Mesh(sphere, new THREE.MeshBasicMaterial({ color: 0xc9deff }));
+  moon.scale.setScalar(3);
+  scene.add(sun, moon);
+  const roads = [-60, -30, 0, 30, 60];
+  const edge = 75, lane = 1.65, cycle = 24;
+  const dummy = new THREE.Object3D();
+  let city, buildings, cars = [], signals = [], batches, seed, random;
+  let elapsed = 0, hour = 8, speed = 1, selected = null;
+  const outline = new THREE.Box3Helper(new THREE.Box3(), 0xb5ffdb);
+  outline.visible = false;
+  scene.add(outline);
+  function add(kind, x, y, z, w, h, d, color = 0xffffff, rotation = 0) {
+    (batches[kind] ||= []).push({ x, y, z, w, h, d, color, rotation });
+  }
+  function matrix(item) {
+    dummy.position.set(item.x, item.y, item.z);
+    dummy.scale.set(item.w, item.h, item.d);
+    dummy.rotation.set(0, item.rotation || 0, 0);
+    dummy.updateMatrix();
+    return dummy.matrix;
+  }
+  function makeBatch(kind, items, dynamic = false) {
+    const mesh = new THREE.InstancedMesh(kind === 'leaf' ? sphere : box, mats[kind], items.length);
+    items.forEach((item, i) => { mesh.setMatrixAt(i, matrix(item)); mesh.setColorAt(i, new THREE.Color(item.color)); });
+    mesh.castShadow = ['building', 'car', 'leaf'].includes(kind);
+    mesh.receiveShadow = !['window', 'lamp', 'head'].includes(kind);
+    if (dynamic) { mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); mesh.frustumCulled = false; }
+    city.add(mesh);
+    return mesh;
+  }
+  function regenerate() {
+    if (city) {
+      scene.remove(city);
+      city.traverse(object => { if (object.isInstancedMesh) object.dispose(); });
+    }
+    $('info').hidden = true;
+    selected = null;
+    outline.visible = false;
+    seed = crypto.getRandomValues(new Uint32Array(1))[0];
+    random = () => {
+      seed |= 0; seed = seed + 0x6d2b79f5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t ^= t + Math.imul(t ^ t >>> 7, 61 | t);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+    city = new THREE.Group(); scene.add(city);
+    batches = {}; cars = []; signals = [];
+    for (const r of roads) {
+      add('road', r, 0, 0, 8, 0.12, 150);
+      add('road', 0, 0.01, r, 150, 0.12, 8);
+      for (let p = -72; p <= 72; p += 6) {
+        if (roads.some(c => Math.abs(c - p) < 6)) continue;
+        add('line', r, 0.09, p, 0.12, 0.02, 2.5);
+        add('line', p, 0.10, r, 2.5, 0.02, 0.12);
+      }
+    }
+    const names = ['Willow', 'Juniper', 'Cedar', 'Amber', 'Sage', 'Harbor', 'Orchard', 'Maple'];
+    const types = ['Residential', 'Office', 'Shop', 'Tower'];
+    const suffix = ['Court', 'Works', 'Market', 'Spire'];
+    const palette = [0xd3b99c, 0x91aeb1, 0xd68f75, 0xbac1b5, 0x8294a9, 0xe3cba6];
+    const metadata = [];
+    for (let bx = 0; bx < 4; bx++) for (let bz = 0; bz < 4; bz++) {
+      const cx = -45 + bx * 30, cz = -45 + bz * 30;
+      add('sidewalk', cx, 0.16, cz, 22, 0.35, 22);
+      add('grass', cx, 0.36, cz, 19.7, 0.08, 19.7);
+      for (const dx of [-5.2, 5.2]) for (const dz of [-5.2, 5.2]) {
+        const x = cx + dx, z = cz + dz;
+        if (random() < 0.14) {
+          add('pole', x, 1.6, z, 0.55, 2.6, 0.55);
+          add('leaf', x, 4, z, 3, 3.2, 3, 0xffffff);
+          continue;
+        }
+        const t = Math.floor(random() * 4);
+        const floors = t === 2 ? 1 + Math.floor(random() * 2) : t === 3 ? 9 + Math.floor(random() * 7) : 3 + Math.floor(random() * 6);
+        const w = 6 + random() * 2, d = 6 + random() * 2, h = floors * 1.65;
+        add('building', x, 0.4 + h / 2, z, w, h, d, palette[Math.floor(random() * palette.length)]);
+        metadata.push({ name: `${names[Math.floor(random() * names.length)]} ${suffix[t]} ${metadata.length + 1}`, floors, type: types[t], x, z, w, h, d });
+        add('trim', x, h + 0.53, z, w + 0.35, 0.26, d + 0.35);
+        add('trim', x + w * 0.15, h + 1, z, w * 0.32, 0.8, d * 0.25);
+        for (let f = 0; f < floors; f++) for (let col = -1; col <= 1; col++) {
+          const y = 1.35 + f * 1.65;
+          if (random() > 0.18) for (const sign of [-1, 1]) {
+            add('window', x + col * w / 4, y, z + sign * (d / 2 + 0.015), 0.85, 0.8, 0.03);
+            add('window', x + sign * (w / 2 + 0.015), y, z + col * d / 4, 0.03, 0.8, 0.85);
+          }
+        }
+      }
+      for (const sign of [-1, 1]) {
+        const x = cx + sign * 10, z = cz;
+        add('pole', x, 2.5, z, 0.18, 4.5, 0.18);
+        add('pole', x - sign * 0.6, 4.7, z, 1.3, 0.16, 0.2);
+        add('lamp', x - sign * 1.1, 4.6, z, 0.65, 0.16, 0.55);
+      }
+    }
+    for (const x of roads) for (const z of roads) {
+      for (let axis = 0; axis < 2; axis++) for (const sign of [-1, 1]) {
+        const px = x + (axis === 0 ? -sign * 4.8 : sign * 4.6);
+        const pz = z + (axis === 0 ? -sign * 4.6 : -sign * 4.8);
+        add('pole', px, 1.9, pz, 0.2, 3.8, 0.2);
+        add('pole', px, 3.7, pz, 0.65, 1.6, 0.65);
+        signals.push({ x: px, z: pz, axis });
+      }
+    }
+    for (const [kind, items] of Object.entries(batches)) {
+      const mesh = makeBatch(kind, items);
+      if (kind === 'building') { buildings = mesh; buildings.userData.items = metadata; }
+    }
+    city.userData.lights = ['red', 'yellow', 'green'].map((kind, index) => makeBatch(kind, signals.map(s => ({ x: s.x, y: 4.15 - index * 0.45, z: s.z, w: 0.72, h: 0.27, d: 0.72, color: 0xffffff }))));
+    for (let axis = 0; axis < 2; axis++) for (const road of roads) for (const sign of [-1, 1]) {
+      for (let n = 0; n < 3; n++) cars.push({ axis, road, sign, p: -65 + n * 48 + random() * 4, velocity: 0, color: [0xe5a266, 0x8fbab8, 0xe9dfca, 0xc16e64, 0x7b93b6][Math.floor(random() * 5)] });
+    }
+    const items = cars.map(c => ({ x: 0, y: 0, z: 0, w: 1, h: 1, d: 1, color: c.color }));
+    city.userData.carMeshes = ['car', 'glass', 'head'].map(kind => makeBatch(kind, items.map(item => ({ ...item, color: kind === 'car' ? item.color : 0xffffff })), true));
+    updateCars(0);
+  }
+  // Each axis gets green, yellow and an all-red clearance interval.
+  function phase(axis) {
+    const t = (elapsed + (axis ? 12 : 0)) % cycle;
+    return t < 8 ? 2 : t < 10 ? 1 : 0;
+  }
+  function updateCars(dt) {
+    const proposals = cars.map(car => {
+      let distance = Infinity;
+      for (const crossing of roads) {
+        const toLine = (crossing - car.p) * car.sign - 6.2;
+        if (phase(car.axis) !== 2 && toLine >= -0.02) distance = Math.min(distance, Math.max(0, toLine));
+      }
+      for (const other of cars) {
+        if (other === car || other.axis !== car.axis || other.road !== car.road || other.sign !== car.sign) continue;
+        const gap = ((other.p - car.p) * car.sign + edge * 2) % (edge * 2);
+        distance = Math.min(distance, Math.max(0, gap - 4.4));
+      }
+      const target = Math.min(7, Math.sqrt(2 * 9 * distance));
+      car.velocity += Math.max(-18 * dt, Math.min(5 * dt, target - car.velocity));
+      return Math.min(distance, Math.max(0, car.velocity * dt));
+    });
+    cars.forEach((car, i) => {
+      car.p += car.sign * proposals[i];
+      if (car.p > edge) car.p -= edge * 2;
+      if (car.p < -edge) car.p += edge * 2;
+      const x = car.axis === 0 ? car.p : car.road - car.sign * lane;
+      const z = car.axis === 0 ? car.road + car.sign * lane : car.p;
+      const rotation = car.axis === 0 ? car.sign * Math.PI / 2 : car.sign === 1 ? 0 : Math.PI;
+      const parts = [
+        { x, y: 0.65, z, w: 1.45, h: 0.8, d: 2.9, rotation },
+        { x, y: 1.18, z, w: 1.23, h: 0.55, d: 1.45, rotation },
+        { x: x + (car.axis === 0 ? car.sign * 1.46 : 0), y: 0.68, z: z + (car.axis === 1 ? car.sign * 1.46 : 0), w: 1.15, h: 0.2, d: 0.04, rotation }
+      ];
+      parts.forEach((part, j) => city.userData.carMeshes[j].setMatrixAt(i, matrix(part)));
+    });
+    city.userData.carMeshes.forEach(mesh => { mesh.instanceMatrix.needsUpdate = true; });
+  }
+  const daySky = new THREE.Color(0xa8cedb), nightSky = new THREE.Color(0x101c36), duskSky = new THREE.Color(0xc48e83);
+  const color = new THREE.Color();
+  function updateSky() {
+    const angle = (hour - 6) / 24 * Math.PI * 2;
+    const elevation = Math.sin(angle);
+    const daylight = THREE.MathUtils.smoothstep(elevation, -0.15, 0.5);
+    const night = 1 - THREE.MathUtils.smoothstep(elevation, -0.08, 0.2);
+    color.copy(nightSky).lerp(daySky, daylight).lerp(duskSky, Math.max(0, 1 - Math.abs(elevation) * 5) * 0.45);
+    scene.background.copy(color);
+    scene.fog.color.copy(color);
+    sunlight.position.set(Math.cos(angle) * 100, elevation * 120, 45);
+    sunlight.intensity = Math.max(0, elevation) * 3.2;
+    sun.position.copy(sunlight.position).multiplyScalar(1.6);
+    moon.position.copy(sun.position).negate();
+    sun.visible = elevation > -0.08;
+    moon.visible = elevation < 0.08;
+    moonlight.position.copy(moon.position);
+    moonlight.intensity = night * 0.65;
+    hemi.intensity = 0.35 + daylight * 1.7;
+    mats.window.emissiveIntensity = night * 2.5;
+    mats.lamp.emissiveIntensity = night * 4;
+    mats.head.emissiveIntensity = night * 4;
+    $('time').textContent = `${String(Math.floor(hour)).padStart(2, '0')}:${String(Math.floor(hour % 1 * 60)).padStart(2, '0')}`;
+    $('period').textContent = hour < 5 || hour >= 21 ? 'Nightfall' : hour < 8 ? 'First light' : hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Golden hour';
+    city.userData.lights.forEach((mesh, index) => {
+      signals.forEach((s, i) => mesh.setColorAt(i, color.setHex(phase(s.axis) === index ? 0xffffff : 0x080808)));
+      mesh.instanceColor.needsUpdate = true;
+      // Unlit signal materials remain readable in daylight and at night.
+    });
+  }
+  const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2();
+  let down = null;
+  renderer.domElement.addEventListener('pointerdown', event => { down = { x: event.clientX, y: event.clientY, button: event.button }; });
+  renderer.domElement.addEventListener('pointerup', event => {
+    if (!down || down.button !== 0 || Math.hypot(event.clientX - down.x, event.clientY - down.y) > 5) return;
+    pointer.set(event.clientX / innerWidth * 2 - 1, 1 - event.clientY / innerHeight * 2);
+    raycaster.setFromCamera(pointer, camera);
+    const hit = raycaster.intersectObject(buildings)[0];
+    $('info').hidden = !hit;
+    outline.visible = !!hit;
+    if (!hit) { selected = null; return; }
+    selected = buildings.userData.items[hit.instanceId];
+    $('name').textContent = selected.name;
+    $('floors').textContent = selected.floors;
+    $('type').textContent = selected.type;
+    const bounds = new THREE.Box3(new THREE.Vector3(selected.x - selected.w / 2, 0.4, selected.z - selected.d / 2), new THREE.Vector3(selected.x + selected.w / 2, selected.h + 0.4, selected.z + selected.d / 2));
+    outline.box.copy(bounds);
+  });
+  $('close').onclick = () => { $('info').hidden = true; outline.visible = false; selected = null; };
+  $('speed').oninput = event => { speed = Number(event.target.value); $('speedValue').value = `${speed}×`; };
+  $('regenerate').onclick = regenerate;
+  addEventListener('resize', () => {
+    camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+  });
+  renderer.domElement.addEventListener('webglcontextlost', event => {
+    event.preventDefault(); $('status').textContent = 'Graphics connection interrupted. Reload to return to your city.'; $('status').hidden = false;
+  });
+  regenerate();
+  $('status').hidden = true;
+  let last = performance.now();
+  renderer.setAnimationLoop(now => {
+    const dt = Math.min((now - last) / 1000, 0.1) * speed; last = now;
+    // Small simulation steps prevent fast-forward from skipping stop lines.
+    let remaining = dt;
+    while (remaining > 0) {
+      const step = Math.min(remaining, 1 / 30);
+      elapsed += step; updateCars(step); remaining -= step;
+    }
+    hour = (hour + dt * 0.06) % 24;
+    updateSky(); controls.update(); renderer.render(scene, camera);
+  });
+} catch (error) {
+  $('status').hidden = false;
+  $('status').textContent = 'Unable to start the city. Please check your internet connection and enable WebGL, then reload.';
+  console.error(error);
+}
+</script>
+</body>
+</html>
