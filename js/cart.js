@@ -20,7 +20,7 @@ const timber=new THREE.MeshStandardMaterial({map:wood,roughness:.55});
 const cream=mat(0xffedc4),brass=mat(0xc89e49,.25,.78),steel=mat(0xbac7c7,.23,.85),black=mat(0x252e2d),paper=mat(0xf3e7c9);
 const bread=new THREE.MeshStandardMaterial({map:sesame,roughness:.72});
 const bun=mat(0xc98336,.34),cheese=mat(0xffedaf),white=mat(0xf7f1df),blue=mat(0x3489aa,.3);
-const glass=new THREE.MeshPhysicalMaterial({color:0xcceaf0,transparent:true,opacity:.18,roughness:.09,metalness:.12,depthWrite:false});
+const glass=new THREE.MeshPhysicalMaterial({color:0xcceaf0,transparent:true,opacity:.13,roughness:.06,metalness:.25,envMapIntensity:1.4,depthWrite:false});
 function mesh(parent,geo,material,x=0,y=0,z=0){const m=new THREE.Mesh(geo,material);m.position.set(x,y,z);m.castShadow=material!==glass;m.receiveShadow=true;parent.add(m);return m;}
 function box(p,w,h,d,m,x=0,y=0,z=0,r=.012){return mesh(p,new RoundedBoxGeometry(w,h,d,2,Math.min(r,w/3,h/3,d/3)),m,x,y,z);}
 function cyl(p,rt,rb,h,m,x=0,y=0,z=0,n=32){return mesh(p,new THREE.CylinderGeometry(rt,rb,h,n),m,x,y,z);}
@@ -74,7 +74,7 @@ sign(cart,.66,.25,'SİMİT\nİSTANBUL',0,.61,-.421,'#f6e8c5','#9f3027');
 // The far-side glass case leaves a clear, open serving worktop toward the vendor.
 box(cart,.76,.025,.29,brass,-.27,1.055,-.96);
 for(const x of [-.65,.11])for(const z of [-1.105,-.815])box(cart,.014,.31,.014,brass,x,1.22,z);
-box(cart,.78,.018,.31,brass,-.27,1.38,-.96);
+for(const z of [-1.105,-.815])box(cart,.78,.012,.012,brass,-.27,1.38,z);
 box(cart,.75,.29,.004,glass,-.27,1.22,-1.105);
 for(const x of [-.65,.11])box(cart,.004,.29,.29,glass,x,1.22,-.96);
 box(cart,.75,.004,.29,glass,-.27,1.39,-.96);
@@ -119,7 +119,7 @@ for(const [material,geometries] of batches){
  for(const geometry of geometries)geometry.dispose();
 }
 for(const m of staticMeshes){m.removeFromParent();m.geometry.dispose();}
-const positions=[[-.43,1.075,-.95],[.31,1.045,-.74],[.68,1.115,-.98],[-.13,1.058,-.59],[.07,1.058,-.59],[.39,1.048,-.53],[.54,1.045,-.78],[.05,1.045,-.79]];
+const positions=[[-.54,1.075,-.96],[.2,1.045,-.78],[.68,1.115,-.98],[-.22,1.058,-.69],[-.02,1.058,-.69],[.23,1.048,-.56],[.51,1.045,-.78],[.00,1.045,-.48]];
 const displays=[],targets=[],trayItems=[],flights=[],templates=new Map();
 for(let i=0;i<products.length;i++){
  const p=products[i],template=makeProduct(p.id);templates.set(p.id,template);

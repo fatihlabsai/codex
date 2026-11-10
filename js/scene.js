@@ -10,7 +10,7 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.querySelector('#viewport').appendChild(renderer.domElement);
-export const camera = new THREE.PerspectiveCamera(62,innerWidth/innerHeight,.025,1800);
+export const camera = new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.025,1800);
 export const rig = new THREE.Group();
 rig.position.set(0,1.65,0); scene.add(rig); rig.add(camera);
 camera.rotation.order = 'YXZ';
@@ -45,7 +45,7 @@ export function setTimeOfDay(hours){
  return h;
 }
 let active=false, flyStart=-1, elapsed=0, yaw=0, pitch=0, targetYaw=0,targetPitch=0,shake=0;
-const basePitch=THREE.MathUtils.degToRad(-12), origin=new THREE.Vector3(4.6,5.5,5.2), destination=new THREE.Vector3(0,1.65,0);
+const basePitch=THREE.MathUtils.degToRad(-18), origin=new THREE.Vector3(4.6,5.5,5.2), destination=new THREE.Vector3(0,1.65,.65);
 const look=new THREE.Vector3(0,1,-.85);
 rig.position.copy(origin);camera.lookAt(look);
 renderer.domElement.addEventListener('pointermove',e=>{
@@ -62,7 +62,7 @@ export function updateScene(dt,time){
  if(flyStart>=0||flyStart===-1e9){
   const t=Math.min(1,(performance.now()/1000-flyStart)/3),ease=t*t*(3-2*t);
   rig.position.lerpVectors(origin,destination,ease);rig.position.y+=Math.sin(t*Math.PI)*.65;
-  look.set(0,THREE.MathUtils.lerp(1,1.65-Math.tan(-basePitch),ease),THREE.MathUtils.lerp(-.85,-1,ease));
+  look.set(0,THREE.MathUtils.lerp(1,1.65-1.65*Math.tan(-basePitch),ease),THREE.MathUtils.lerp(-.85,-1,ease));
   camera.lookAt(look);
   if(t===1){active=true;flyStart=-1;camera.rotation.set(basePitch,0,0);}
  }else if(active){
