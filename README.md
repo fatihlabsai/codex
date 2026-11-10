@@ -8,8 +8,14 @@ Open **index.html** in a modern Chrome or Firefox browser, or visit the live Git
 
 An internet connection is required to load Three.js and OrbitControls from the CDN. Everything else—geometry, styling, and simulation—is contained in `index.html`. No build step is needed.
 
+## Live city minimap
+
+A north-up map shows the island, road grid, generated building footprints, and moving traffic. A mint arrow marks your orbit focus and viewing direction, then follows your position and heading when driving. Selected buildings receive a mint outline. The map rebuilds with every regenerated city; its cached plan and 15 Hz markers add no WebGL draw calls.
+
 ## Controls
 
+- **Minimap:** click or tap to move the orbit camera to that part of town. While driving, it follows your car and map navigation is disabled.
+- **M / map Hide–Show button:** collapse or restore the map. With the map focused in orbit mode, arrow keys pan in 10-unit steps; Home, Enter, or Space centers the city.
 - **Drag:** orbit. **Right-drag:** pan. **Scroll:** zoom.
 - **Touch:** one finger to orbit; two fingers to pan or pinch to zoom.
 - **Click any car:** take control; a mint ring highlights it and the Driving panel shows speed. A smooth chase camera follows while orbit controls are disabled.

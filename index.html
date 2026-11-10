@@ -9,6 +9,8 @@
 <style>
 *{box-sizing:border-box}body{margin:0;overflow:hidden;background:#101c25;color:#eef5f3;font:14px/1.5 system-ui,sans-serif}canvas{display:block;touch-action:none}button,input{font:inherit}button{cursor:pointer;color:inherit;background:#ffffff0d;border:1px solid #ffffff24;border-radius:10px;padding:10px 14px}button:hover{background:#ffffff20}button:focus-visible,input:focus-visible{outline:2px solid #91e7c1;outline-offset:4px}.glass{background:#101c25e8;border:1px solid #ffffff19;box-shadow:0 12px 40px #0003;backdrop-filter:blur(18px);border-radius:18px}header{position:absolute;top:24px;left:24px;padding:19px 24px;pointer-events:none}h1{font-size:28px;letter-spacing:-1px;margin:0}h1 span{color:#9ee6bc}p{margin:4px 0;color:#aebfc7}.eyebrow{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#9ee6bc}.controls{position:absolute;bottom:24px;left:24px;width:310px;padding:20px}.clock{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}time{font-size:30px;font-variant-numeric:tabular-nums;letter-spacing:-1px}#period{color:#9ee6bc;font-size:12px}label{display:flex;justify-content:space-between;color:#b9c8ce;font-size:12px}input{width:100%;accent-color:#9ee6bc;margin:14px 0 18px}.controls button{width:100%}.hint{position:absolute;right:24px;bottom:24px;color:#d2dfe3;font-size:12px;text-align:right;text-shadow:0 1px 5px #000}.info{position:absolute;right:24px;top:24px;width:270px;padding:22px}.info h2{font-size:22px;margin:12px 0 16px}.info button{position:absolute;right:12px;top:10px;padding:3px 10px}.stats{display:flex;gap:36px}.stats strong{display:block;font-size:18px}.stats span{color:#aebfc7;font-size:11px;text-transform:uppercase;letter-spacing:1px}#status{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:20px;max-width:90vw;text-align:center}[hidden]{display:none!important}@media(max-width:600px){header{top:12px;left:12px;padding:12px 18px}h1{font-size:24px}header p{font-size:11px}.controls{left:12px;bottom:12px;width:240px;padding:14px}.clock{margin-bottom:8px}.hint{right:12px;bottom:12px;max-width:90px;font-size:10px}.info{top:120px;right:12px;width:240px}input{margin:8px 0 12px}}
 .driving{position:absolute;right:24px;top:24px;width:270px;padding:20px}.driving h2{margin:0}.driving .readout{font-size:32px;color:#9ee6bc;font-variant-numeric:tabular-nums}.driving button{width:100%;margin-top:12px}@media(max-width:600px){.driving{top:110px;right:12px;width:220px}}
+.minimap{position:absolute;left:24px;top:146px;width:216px;padding:12px}.map-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}.map-heading button{padding:3px 8px;font-size:11px}.map-heading h2{margin:0;font-size:12px;font-weight:600;letter-spacing:1px}.minimap canvas{width:190px;height:190px;margin-top:8px;border-radius:10px;cursor:crosshair}.minimap p{font-size:10px;margin:6px 0 0}.map-legend{display:flex;justify-content:space-between;color:#c4d5d8;font-size:10px;margin-top:6px}.map-legend b{color:#9ee6bc}.minimap.collapsed{width:216px}@media(max-width:600px),(max-height:700px){.minimap{top:110px;left:12px;width:156px;padding:10px}.minimap canvas{width:134px;height:134px}.minimap.collapsed{width:156px}.map-heading h2{font-size:10px}.map-heading button{padding:3px 6px}.map-legend{font-size:9px}}@media(max-height:540px){.minimap{left:auto;right:24px;top:auto;bottom:90px}.info,.driving{right:196px;top:12px}.hint{display:none}}
+@media(max-width:600px) and (min-height:541px){.minimap,.minimap.collapsed{width:128px}.minimap canvas{width:106px;height:106px}.map-heading{gap:3px}.map-heading h2{letter-spacing:0}.map-legend{flex-wrap:wrap;gap:2px 8px}.info,.driving{width:calc(100vw - 164px);padding:14px}.stats{gap:12px;flex-wrap:wrap}}
 </style>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}
@@ -16,6 +18,12 @@
 </head>
 <body>
 <header class="glass"><div class="eyebrow">An urban miniature</div><h1>Astra <span>City</span></h1><p>A little world. An endless ordinary day.</p></header>
+<aside id="minimap" class="minimap glass" aria-label="City minimap">
+<div class="map-heading"><h2>CITY MAP</h2><button id="toggleMap" aria-expanded="true" aria-controls="mapContent" title="Toggle minimap (M)">Hide</button></div>
+<div id="mapContent"><canvas id="map" width="380" height="380" tabindex="0" role="button" aria-label="North-up city map. Click to focus the orbit camera. Arrow keys pan, Home centers the city."></canvas>
+<div class="map-legend"><span><b>▲</b> You / view</span><span>• Traffic</span><span>N ↑</span></div>
+<p id="mapHelp">Click to explore · M to hide</p></div>
+</aside>
 <section class="controls glass" aria-label="Simulation controls">
 <div class="clock"><time id="time">08:00</time><span id="period">Morning</span></div>
 <label for="speed">Passage of time <output id="speedValue">1×</output></label>
@@ -208,6 +216,7 @@ try {
     const items = cars.map(c => ({ x: 0, y: 0, z: 0, w: 1, h: 1, d: 1, color: c.color }));
     city.userData.carMeshes = ['car', 'glass', 'head'].map(kind => makeBatch(kind, items.map(item => ({ ...item, color: kind === 'car' ? item.color : 0xffffff })), true));
     updateCars(0); renderCars();
+    rebuildMap();
   }
   // Each axis gets green, yellow and an all-red clearance interval.
   function phase(axis) {
@@ -455,6 +464,100 @@ try {
       // Unlit signal materials remain readable in daylight and at night.
     });
   }
+  // Cache the static plan once per city; live markers use a 2D canvas at 15 Hz.
+  // North is -Z. A fixed scale preserves orientation when the chase camera turns.
+  const mapCanvas = $('map'), mapContext = mapCanvas.getContext('2d');
+  const mapBase = document.createElement('canvas');
+  mapBase.width = mapBase.height = 380;
+  const mapBaseContext = mapBase.getContext('2d');
+  const mapScale = 380 / 224;
+  let mapLastDraw = -Infinity;
+  const mapPoint = value => 190 + value * mapScale;
+  function rebuildMap() {
+    const ctx = mapBaseContext;
+    ctx.fillStyle = '#101c25'; ctx.fillRect(0, 0, 380, 380);
+    ctx.fillStyle = '#304f43'; ctx.beginPath();
+    ctx.arc(190, 190, 106 * mapScale, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#687a7e';
+    for (const road of roads) {
+      ctx.fillRect(mapPoint(road - 4), mapPoint(-75), 8 * mapScale, 150 * mapScale);
+      ctx.fillRect(mapPoint(-75), mapPoint(road - 4), 150 * mapScale, 8 * mapScale);
+    }
+    for (const b of buildings.userData.items) {
+      ctx.fillStyle = ['#a4b8bc', '#829eac', '#d7b489', '#bdcbd3'][['Residential', 'Office', 'Shop', 'Tower'].indexOf(b.type)];
+      ctx.fillRect(mapPoint(b.x - b.w / 2), mapPoint(b.z - b.d / 2), b.w * mapScale, b.d * mapScale);
+    }
+    mapLastDraw = -Infinity;
+  }
+  function drawMap(now) {
+    if ($('mapContent').hidden || now - mapLastDraw < 1000 / 15) return;
+    mapLastDraw = now;
+    const ctx = mapContext;
+    ctx.drawImage(mapBase, 0, 0);
+    if (selected) {
+      ctx.strokeStyle = '#b5ffdb'; ctx.lineWidth = 3;
+      ctx.strokeRect(mapPoint(selected.x - selected.w / 2) - 2, mapPoint(selected.z - selected.d / 2) - 2, selected.w * mapScale + 4, selected.d * mapScale + 4);
+    }
+    ctx.fillStyle = '#f5e4c6'; ctx.beginPath();
+    for (const car of cars) {
+      if (car === player) continue;
+      ctx.moveTo(mapPoint(car.x) + 2, mapPoint(car.z));
+      ctx.arc(mapPoint(car.x), mapPoint(car.z), 2, 0, Math.PI * 2);
+    }
+    ctx.fill();
+    const focus = player || controls.target;
+    // Clamp the orbit target indicator to the chart when users pan off the island.
+    const x = THREE.MathUtils.clamp(mapPoint(focus.x), 12, 368);
+    const z = THREE.MathUtils.clamp(mapPoint(focus.z), 12, 368);
+    const heading = player ? player.heading : Math.atan2(controls.target.x - camera.position.x, controls.target.z - camera.position.z);
+    ctx.save(); ctx.translate(x, z); ctx.rotate(-heading);
+    ctx.fillStyle = '#9ee6bc'; ctx.strokeStyle = '#101c25'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(-7, -7); ctx.lineTo(0, -4); ctx.lineTo(7, -7); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.restore();
+    ctx.strokeStyle = '#9ee6bc88'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(x, z, player ? 13 : 18, 0, Math.PI * 2); ctx.stroke();
+    $('mapHelp').textContent = player ? 'Live position · M to hide' : 'Click to explore · M to hide';
+    mapCanvas.style.cursor = player ? 'default' : 'crosshair';
+  }
+  function focusMap(x, z) {
+    if (player) return;
+    x = THREE.MathUtils.clamp(x, -100, 100);
+    z = THREE.MathUtils.clamp(z, -100, 100);
+    // Flush orbit damping before translating the camera and its target together.
+    controls.enableDamping = false; controls.update();
+    camera.position.x += x - controls.target.x;
+    camera.position.z += z - controls.target.z;
+    controls.target.x = x; controls.target.z = z;
+    controls.update(); controls.enableDamping = true;
+    mapLastDraw = -Infinity;
+  }
+  mapCanvas.addEventListener('click', event => {
+    const rect = mapCanvas.getBoundingClientRect();
+    focusMap(((event.clientX - rect.left) / rect.width - 0.5) * 224, ((event.clientY - rect.top) / rect.height - 0.5) * 224);
+  });
+  mapCanvas.addEventListener('keydown', event => {
+    if (player) return;
+    const steps = { ArrowLeft: [-10, 0], ArrowRight: [10, 0], ArrowUp: [0, -10], ArrowDown: [0, 10] };
+    if (steps[event.code]) {
+      event.preventDefault();
+      focusMap(controls.target.x + steps[event.code][0], controls.target.z + steps[event.code][1]);
+    } else if (['Home', 'Enter', 'Space'].includes(event.code)) {
+      event.preventDefault(); focusMap(0, 0);
+    }
+  });
+  function toggleMap() {
+    const hidden = !$('mapContent').hidden;
+    $('mapContent').hidden = hidden;
+    $('minimap').classList.toggle('collapsed', hidden);
+    $('toggleMap').textContent = hidden ? 'Show' : 'Hide';
+    $('toggleMap').setAttribute('aria-expanded', String(!hidden));
+    mapLastDraw = -Infinity;
+  }
+  $('toggleMap').onclick = toggleMap;
+  addEventListener('keydown', event => {
+    if (event.code !== 'KeyM' || event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.target instanceof HTMLInputElement) return;
+    event.preventDefault(); toggleMap();
+  });
   const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2();
   let down = null;
   renderer.domElement.addEventListener('pointerdown', event => { down = { x: event.clientX, y: event.clientY, button: event.button }; });
@@ -507,6 +610,7 @@ try {
     hour = (hour + dt * 0.06) % 24;
     renderCars(); updateSky();
     if (player) updateChase(realDt); else controls.update();
+    drawMap(now);
     renderer.render(scene, camera);
   });
 } catch (error) {
