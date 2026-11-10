@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {scene,camera,renderer,updateScene,resize,startFlyIn,setTimeOfDay,isPlaying} from './scene.js';
+import {scene,camera,renderer,updateScene,resize,startFlyIn,skipIntro,setTimeOfDay,isPlaying} from './scene.js';
 import {products,canvasTexture,pickProduct,clearTray,removeLastTrayItem,updateCart} from './cart.js';
 const groundTexture=canvasTexture((c,s)=>{
  c.fillStyle='#706f65';c.fillRect(0,0,s,s);
@@ -31,5 +31,5 @@ window.addEventListener('resize',resize);
 let last=performance.now(),time=0,sampleIndex=0,sampleCount=0,sampleTotal=0;
 const samples=new Float64Array(90);
 function frame(now){const raw=(now-last)/1000;last=now;const dt=Math.min(raw,.05);time+=dt;if(raw>0){sampleTotal-=samples[sampleIndex];samples[sampleIndex]=raw;sampleTotal+=raw;sampleIndex=(sampleIndex+1)%samples.length;sampleCount=Math.min(sampleCount+1,samples.length);}updateScene(dt,time);updateCart(dt);ripple.offset.x=time*.004;renderer.render(scene,camera);requestAnimationFrame(frame);}
-window.__game={ready:true,fps:()=>sampleTotal?Math.round(sampleCount/sampleTotal):0,addProduct:pickProduct,setTime(h){const hour=setTimeOfDay(h);document.querySelector('#clock').textContent=`${String(Math.floor(hour)).padStart(2,'0')}:${String(Math.floor(hour%1*60)).padStart(2,'0')}`;return hour;}};
+window.__game={ready:true,skipIntro,fps:()=>sampleTotal?Math.round(sampleCount/sampleTotal):0,addProduct:pickProduct,setTime(h){const hour=setTimeOfDay(h);document.querySelector('#clock').textContent=`${String(Math.floor(hour)).padStart(2,'0')}:${String(Math.floor(hour%1*60)).padStart(2,'0')}`;return hour;}};
 requestAnimationFrame(frame);

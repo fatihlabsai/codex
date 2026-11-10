@@ -53,13 +53,14 @@ renderer.domElement.addEventListener('pointermove',e=>{
  targetPitch=-(e.clientY/innerHeight-.5)*2*THREE.MathUtils.degToRad(e.clientY<innerHeight/2?15:40);
 });
 renderer.domElement.addEventListener('pointerleave',()=>{targetYaw=targetPitch=0;});
-export function startFlyIn(){if(flyStart<0&&!active)flyStart=elapsed;}
+export function startFlyIn(){if(flyStart<0&&!active)flyStart=performance.now()/1000;}
+export function skipIntro(){if(flyStart>=0)flyStart=-1e9;else if(!active)flyStart=-1e9;}
 export function isPlaying(){return active;}
 export function screenShake(strength=.018){shake=Math.max(shake,strength);}
 export function updateScene(dt,time){
  elapsed=time;
- if(flyStart>=0){
-  const t=Math.min(1,(time-flyStart)/3),ease=t*t*(3-2*t);
+ if(flyStart>=0||flyStart===-1e9){
+  const t=Math.min(1,(performance.now()/1000-flyStart)/3),ease=t*t*(3-2*t);
   rig.position.lerpVectors(origin,destination,ease);rig.position.y+=Math.sin(t*Math.PI)*.65;
   look.set(0,THREE.MathUtils.lerp(1,1.65-Math.tan(-basePitch),ease),THREE.MathUtils.lerp(-.85,-1,ease));
   camera.lookAt(look);
