@@ -1,44 +1,90 @@
-import {createPeopleSystem,customerTypes} from './people.js';
-import {scene,camera,renderer,updateScene,resize,startFlyIn,skipIntro,setTimeOfDay,isPlaying} from './scene.js';
-import {products,pickProduct,clearTray,removeLastTrayItem,updateCart} from './cart.js';
+import {createPeopleSystem} from './people.js';
+import {scene,camera,renderer,updateScene,resize,startFlyIn,skipIntro,setTimeOfDay,isPlaying,screenShake} from './scene.js';
+import {products,pickProduct,clearTray,removeLastTrayItem,updateCart,setProductHandler,setCartEnabled,setCashOpen,serveTray,saleSparkles} from './cart.js';
 import {buildCity,updateCity,setFerryHornCallback} from './city.js';
+import {createGame} from './game.js';
+import {createUI} from './ui.js';
+import {createAudio} from './audio.js';
 buildCity(scene);
-let cityHour=7;
-const people=createPeopleSystem(scene,camera);
-const greetings={
- ogrenci:'Derse yetişeceğim, bir el atar mısın?',lise:'Abi zil çalacak, hızlı olsun!',
- isadami:'Ofise kahvaltı götürüyorum. Kolay gelsin.',teyze:'Çayının demi yerinde mi evladım?',
- turist:'Is this simit? It smells wonderful!',balikci:'Deniz bugün cömert, simit de taze olsun.',
- emekli:'Çay tavşan kanı olsun. Gazeteyi de açayım.',taksici:'Usta çabuk, taksimetre çalışıyor!'
-};
-const speech=document.createElement('div');speech.id='speech';speech.hidden=true;document.querySelector('#hud').append(speech);
-const animalNotice=document.createElement('div');animalNotice.id='animalNotice';animalNotice.hidden=true;document.querySelector('#hud').append(animalNotice);
-let demoTimer=7,customerWait=0,lastCustomer=null;
-function spawnCustomer(type){if(['kedi','cat','marti','seagull'].includes(type))return people.spawnAnimal(type==='cat'?'kedi':type==='seagull'?'marti':type);if(people.customers.length>=3)return null;return people.spawn(customerTypes.includes(type)?type:customerTypes[Math.floor(Math.random()*8)]);}
-function updatePeople(dt){
- people.update(dt);demoTimer+=dt;
- if(demoTimer>=8&&people.customers.length<3){spawnCustomer();demoTimer=0;}
- if(!people.current&&people.queue.length)people.setCurrent(people.queue[0]);
- const h=people.current;if(h!==lastCustomer){customerWait=0;lastCustomer=h;}
- speech.hidden=true;
- if(h?.arrived){customerWait+=dt;const p=people.headScreenPosition(h);speech.textContent=greetings[h.type];speech.hidden=!p?.visible;if(p){speech.style.left=`${p.x}px`;speech.style.top=`${p.y}px`;}if(customerWait>=5&&!h.demoHappy){people.react(h,'happy');h.demoHappy=true;}if(customerWait>=7)people.leave(h);}
- const a=people.animals[0];animalNotice.hidden=!a||a.state==='flee';if(a){animalNotice.textContent=`${a.type==='kedi'?'🐈 Peynir peşinde!':'🐦 Simit peşinde!'} ${Math.ceil(a.timer)} sn · Tıkla / Boşluk`;if(a.state==='perched'&&a.timer===0){const stolen=people.animalStolen();document.dispatchEvent(new CustomEvent('cartnotice',{detail:stolen==='simit'?'Martı bir simit kaptı!':'Kedi peyniri kaptı!'}));}}
-}
-renderer.domElement.addEventListener('click',e=>{if(!isPlaying())return;const a=people.pick({x:e.clientX/innerWidth*2-1,y:1-e.clientY/innerHeight*2});if(a){e.stopImmediatePropagation();people.shooAnimal();}},true);
-window.addEventListener('keydown',e=>{if(e.code==='Space'&&isPlaying()){e.preventDefault();people.shooAnimal();}});
-function applyTime(h,immediate=true){cityHour=setTimeOfDay(h);if(immediate)updateCity(0,time,cityHour);document.querySelector('#clock').textContent=`${String(Math.floor(cityHour)).padStart(2,'0')}:${String(Math.floor(cityHour%1*60)).padStart(2,'0')}`;document.querySelector('.clock small').textContent=cityHour>=18?'AKŞAM SERİNLİĞİ':cityHour>=12?'RIHTIMDA BİR GÜN':'YENİ BİR SABAH';return cityHour;}
-const bar=document.querySelector('#productBar');
-for(const [i,p] of products.entries()){const b=document.createElement('button');b.className=p.locked?'locked':'';b.innerHTML=`<kbd>${i+1}${p.locked?' · 🔒':''}</kbd><b>${p.name}</b><small>${p.price} ₺</small>`;b.setAttribute('aria-label',`${p.name}, ${p.price} lira${p.locked?', kilitli':''}`);b.addEventListener('click',()=>pickProduct(p.id));bar.appendChild(b);}
-const start=document.querySelector('#startBtn');start.disabled=false;start.textContent='Tezgâhı Aç';
-start.addEventListener('click',()=>{start.disabled=true;startFlyIn();document.querySelector('#titleScreen').classList.add('leaving');setTimeout(()=>{document.querySelector('#titleScreen').hidden=true;document.querySelector('#hud').hidden=false;},2800);});
-document.querySelector('#undoBtn').addEventListener('click',removeLastTrayItem);
-document.querySelector('#clearBtn').addEventListener('click',clearTray);
-document.addEventListener('traychange',e=>{document.querySelector('#trayCount').textContent=`${e.detail.length} ürün`;});
-let noticeTimer;document.addEventListener('cartnotice',e=>{const el=document.querySelector('#notice');el.textContent=e.detail;el.classList.add('visible');clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>el.classList.remove('visible'),2300);});
-window.addEventListener('keydown',e=>{if(!isPlaying()||e.repeat||e.ctrlKey||e.metaKey||e.altKey)return;if(/^[1-8]$/.test(e.key)){e.preventDefault();pickProduct(products[Number(e.key)-1].id);}if(e.key==='Backspace'){e.preventDefault();removeLastTrayItem();}});
+const people=createPeopleSystem(scene,camera),audio=createAudio(),actors=new Map(),departures=[];
+let ui,time=0,cityHour=7,pendingStart=false,hudTick=0;
+const game=createGame((event,data)=>{
+ switch(event){
+  case 'toast':ui?.toast(data);break;
+  case 'sound':audio.play(data);break;
+  case 'mute':audio.setMuted(data);break;
+  case 'spawn':actors.set(data.id,people.spawn(data.type));break;
+  case 'current':people.setCurrent(actors.get(data.id));break;
+  case 'pick':pickProduct(data);break;
+  case 'remove':removeLastTrayItem(data);break;
+  case 'clear':clearTray();break;
+  case 'serve':serveTray();audio.play('whoosh');people.react(actors.get(data.id),'pay');setCashOpen(true);break;
+  case 'payment':people.react(actors.get(data.id),'pay');setCashOpen(true);break;
+  case 'wrong':people.react(actors.get(data.id),'angry');ui?.wrong();screenShake(.012);break;
+  case 'sale':{
+   const h=actors.get(data.customer.id);people.react(h,data.correct?'happy':'angry');
+   ui?.popup(data,people.headScreenPosition(h));if(data.correct){saleSparkles();screenShake(.009);}break;
+  }
+  case 'money':ui?.popup(data);saleSparkles();break;
+  case 'depart':{
+   const h=actors.get(data.customer.id);people.releaseCurrent(h);if(data.lost)people.react(h,'angry');if(h)departures.push({h,left:data.lost?.4:.7});break;
+  }
+  case 'animal':people.spawnAnimal(data.type);break;
+  case 'shoo':people.shooAnimal();break;
+  case 'reset':case 'end':
+   people.reset();actors.clear();departures.length=0;people.shooAnimal();clearTray();setCashOpen(false);if(event==='end')ui?.render();break;
+ }
+});
+ui=createUI(game);
+setProductHandler(id=>game.addProduct(id));
+setFerryHornCallback(()=>{if(game.state.phase==='playing')audio.play('horn');});
+const start=document.querySelector('#startBtn');start.disabled=false;start.textContent=game.state.day>1?`${game.state.day}. güne devam et`:'Tezgâhı Aç';
+start.addEventListener('click',()=>{audio.start();start.disabled=true;pendingStart=true;startFlyIn();document.querySelector('#titleScreen').classList.add('leaving');});
+document.addEventListener('pointerdown',()=>audio.start(),{once:true});
+document.addEventListener('keydown',()=>audio.start(),{once:true});
+renderer.domElement.addEventListener('click',e=>{
+ if(game.state.phase!=='playing')return;
+ const animal=people.pick({x:e.clientX/innerWidth*2-1,y:1-e.clientY/innerHeight*2});
+ if(animal){e.stopImmediatePropagation();game.shoo();}
+},true);
+document.addEventListener('cartnotice',e=>ui.toast(e.detail));
+window.addEventListener('keydown',e=>{
+ if(e.repeat||e.ctrlKey||e.metaKey||e.altKey||e.target.matches('input,textarea,select'))return;
+ const k=e.key.toLowerCase();if(['p','m','enter','backspace',' '].includes(k)||/^[1-8]$/.test(k))e.preventDefault();
+ if(k==='p'){game.pause();ui.render();return;}if(k==='m'){game.mute();ui.render();return;}
+ if(game.state.phase!=='playing')return;
+ if(/^[1-8]$/.test(k))game.addProduct(products[Number(k)-1].id);
+ if(k==='enter'){if(game.state.current?.stage==='payment')game.giveChange();else game.serve();}
+ if(k==='backspace')game.removeProduct(game.state.tray.length-1);
+ if(k===' ')game.shoo();ui.render();
+});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&game.state.phase==='playing'){game.pause();ui.render();}});
 window.addEventListener('resize',resize);
-let last=performance.now(),time=0,sampleIndex=0,sampleCount=0,sampleTotal=0;
+function syncProducts(){for(const p of products)p.locked=!game.unlocked(p.id);setCartEnabled(game.state.phase==='playing');}
+function step(dt){
+ if(game.state.phase==='paused'||game.state.phase==='summary'){ui.update(0,null);return;}
+ time+=dt;updateScene(dt,time);
+ if(pendingStart&&isPlaying()){pendingStart=false;game.startDay();ui.hideTitle();}
+ syncProducts();
+ if(game.state.phase==='playing'){
+  people.update(dt);
+  const c=game.state.current;if(c)c.arrived=!!actors.get(c.id)?.arrived;
+  game.update(dt);
+  for(let i=departures.length-1;i>=0;i--){const d=departures[i];d.left-=dt;if(d.left<=0){people.leave(d.h);if(!game.state.current||game.state.current.stage==='order')setCashOpen(false);departures.splice(i,1);}}
+  // Release references once the departing model has been disposed by people.js.
+  for(const [id,h] of actors)if(!people.customers.includes(h))actors.delete(id);
+  cityHour=setTimeOfDay(7+game.state.time/game.state.duration*13);
+ }
+ updateCart(dt);updateCity(dt,time,cityHour);
+ scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);
+ ui.update(dt,people.headScreenPosition(actors.get(game.state.current?.id)));
+ hudTick+=dt;if(hudTick>=.1){hudTick=0;ui.render();}
+}
+let last=performance.now(),sampleIndex=0,sampleCount=0,sampleTotal=0,accumulator=0;
 const samples=new Float64Array(90);
-function frame(now){const raw=(now-last)/1000;last=now;const dt=Math.min(raw,.05);time+=dt;if(raw>0){sampleTotal-=samples[sampleIndex];samples[sampleIndex]=raw;sampleTotal+=raw;sampleIndex=(sampleIndex+1)%samples.length;sampleCount=Math.min(sampleCount+1,samples.length);}updateScene(dt,time);updateCart(dt);if(isPlaying()){applyTime(Math.min(20,cityHour+dt*13/210),false);updatePeople(dt);}updateCity(dt,time,cityHour);renderer.render(scene,camera);requestAnimationFrame(frame);}
-window.__game={ready:true,skipIntro(){skipIntro();document.querySelector('#titleScreen').hidden=true;document.querySelector('#hud').hidden=false;},setFerryHornCallback,fps:()=>sampleTotal?Math.round(sampleCount/sampleTotal):0,addProduct:pickProduct,people,spawnCustomer,setTime:applyTime};
-requestAnimationFrame(frame);
+function frame(now){const raw=(now-last)/1000;last=now;if(raw>0){sampleTotal-=samples[sampleIndex];samples[sampleIndex]=raw;sampleTotal+=raw;sampleIndex=(sampleIndex+1)%samples.length;sampleCount=Math.min(sampleCount+1,samples.length);}
+ accumulator+=Math.min(raw,.25);while(accumulator>=1/60){step(1/60);accumulator-=1/60;}renderer.render(scene,camera);requestAnimationFrame(frame);
+}
+function enterGame(){pendingStart=false;skipIntro();updateScene(0,time);ui.hideTitle();game.startDay();syncProducts();ui.render();return true;}
+window.__game={ready:true,state:game.state,startDay:enterGame,spawnCustomer:type=>game.spawnCustomer(type),getCurrentOrder:game.getCurrentOrder,serveExact(){syncProducts();const result=game.serveExact();ui.render();return result;},addProduct(id){syncProducts();return game.addProduct(id);},fps:()=>sampleTotal?Math.round(sampleCount/sampleTotal):0,skipIntro(){if(game.state.phase==='title')return enterGame();skipIntro();updateScene(0,time);ui.hideTitle();},setTime(h){game.setTime(h);cityHour=setTimeOfDay(7+game.state.time/210*13);updateCity(0,time,cityHour);ui.render();return cityHour;},simulate(seconds){if(!Number.isFinite(seconds)||seconds<0)throw new RangeError('seconds must be finite and non-negative');const ticks=Math.floor(seconds*30);for(let i=0;i<ticks;i++)step(1/30);const remainder=seconds-ticks/30;if(remainder>1e-9)step(remainder);ui.render();},people};
+ui.render();requestAnimationFrame(frame);

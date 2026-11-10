@@ -94,7 +94,9 @@ export function createPeopleSystem(scene,camera){
   }
   for(let i=animals.length-1;i>=0;i--){const a=animals[i];a.age+=dt;if(a.state==='approach'){const t=Math.min(1,a.age/3);a.root.position.lerpVectors(a.start,a.target,t);if(a.type==='kedi')a.root.position.y=a.age<1.8?0:Math.sin((t-.6)/.4*Math.PI)*.35+(t-.6)/.4*1.04;else a.root.position.y+=Math.sin(t*Math.PI)*.5;a.root.rotation.y=Math.atan2(a.target.x-a.start.x,a.target.z-a.start.z);if(t===1){a.state='perched';a.age=0;a.root.position.copy(a.target);}}else if(a.state==='perched'){a.timer=Math.max(0,a.timer-dt);a.root.rotation.x=Math.sin(clock*5)*.05;}else{a.root.position.x+=dt*3;a.root.position.z-=dt*2;a.root.position.y=a.type==='marti'?a.start.y+a.age*2:Math.max(0,a.start.y-a.age*2);a.root.rotation.y=2.2;if(a.age>3){dispose(a);animals.splice(i,1);continue;}}if(a.tail)a.tail.rotation.z=Math.sin(clock*5)*.4;a.wings.forEach((w,j)=>w.rotation.z=(j?1:-1)*(a.state==='perched'?.25:Math.sin(clock*15)*.7));}
  }
+ function reset(){for(const h of [...customers,...animals])dispose(h);customers.length=0;queue.length=0;animals.length=0;current=null;clock=0;}
+ function releaseCurrent(h){if(current===h)current=null;}
  function headScreenPosition(h){if(!h||!customers.includes(h))return null;h.head.getWorldPosition(projected);projected.y+=.26;projected.project(camera);return {x:(projected.x*.5+.5)*innerWidth,y:(.5-projected.y*.5)*innerHeight,visible:projected.z>-1&&projected.z<1&&Math.abs(projected.x)<1&&Math.abs(projected.y)<1};}
  function pick(ndc){ray.setFromCamera(ndc,camera);for(const a of animals){if(a.state!=='flee'&&ray.intersectObject(a.root,true).length)return a;}return null;}
- return {spawn,setCurrent,arrangeQueue,queuePosition,react,leave,spawnAnimal,shooAnimal,animalStolen,update,headScreenPosition,pick,customers,queue,animals,get current(){return current;},get animalTimer(){return animals[0]?.timer??0;}};
+ return {spawn,setCurrent,reset,releaseCurrent,arrangeQueue,queuePosition,react,leave,spawnAnimal,shooAnimal,animalStolen,update,headScreenPosition,pick,customers,queue,animals,get current(){return current;},get animalTimer(){return animals[0]?.timer??0;}};
 }

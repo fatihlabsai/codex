@@ -93,7 +93,7 @@ box(cart,1.98,.025,.025,brass,0,2.34,-.27);
 // Serving tray, recessed cash box, pastry papers and bottle crate.
 export const trayPosition=new THREE.Vector3(-.47,1.06,-.49);
 cyl(cart,.205,.197,.016,steel,...trayPosition.toArray());torus(cart,.197,.009,steel,-.47,1.073,-.49);
-box(cart,.24,.075,.16,black,.61,1.08,-.49);box(cart,.23,.012,.155,steel,.61,1.123,-.49);box(cart,.07,.012,.007,brass,.61,1.08,-.405);
+box(cart,.24,.075,.16,black,.61,1.08,-.49);box(cart,.07,.012,.007,brass,.61,1.08,-.405);
 box(cart,.37,.013,.19,paper,-.06,1.046,-.59);
 box(cart,.17,.075,.16,timber,.68,1.07,-.98);
 for(const x of [.595,.765])box(cart,.008,.045,.17,timber,x,1.13,-.98);
@@ -121,8 +121,14 @@ for(const [material,geometries] of batches){
  for(const geometry of geometries)geometry.dispose();
 }
 for(const m of staticMeshes){m.removeFromParent();m.geometry.dispose();}
+const lidPivot=new THREE.Group();lidPivot.position.set(.61,1.123,-.5675);cart.add(lidPivot);box(lidPivot,.23,.012,.155,steel,0,0,.0775);
+let cashOpen=false,pickHandler=null,enabled=true;
+export function setCashOpen(value){cashOpen=value;}
+export function setProductHandler(handler){pickHandler=handler;}
+export function setCartEnabled(value){enabled=value;}
 const positions=[[-.54,1.075,-.96],[.2,1.045,-.78],[.68,1.115,-.98],[-.22,1.058,-.69],[-.02,1.058,-.69],[.23,1.048,-.56],[.51,1.045,-.78],[.00,1.045,-.48]];
 const displays=[],targets=[],trayItems=[],flights=[],templates=new Map();
+const outlineMaterial=new THREE.MeshBasicMaterial({color:0xffd377,side:THREE.BackSide});
 for(let i=0;i<products.length;i++){
  const p=products[i],template=makeProduct(p.id);templates.set(p.id,template);
  const g=template.clone(true);g.position.set(...positions[i]);cart.add(g);
@@ -130,6 +136,7 @@ for(let i=0;i<products.length;i++){
  g.userData={product:p,baseY:g.position.y};
  // Each display owns its materials, so highlighting never changes other stock.
  const materials=new Map();g.traverse(o=>{if(o.isMesh){if(!materials.has(o.material))materials.set(o.material,o.material.clone());o.material=materials.get(o.material);o.userData.productRoot=g;targets.push(o);}});
+ const shells=[];g.traverse(o=>{if(o.isMesh)shells.push(o);});g.userData.outlines=shells.map(o=>{const shell=new THREE.Mesh(o.geometry,outlineMaterial);shell.scale.setScalar(1.055);shell.visible=false;o.add(shell);return shell;});
  displays.push(g);
 }
 for(let i=0;i<2;i++){const tea=makeProduct('cay');tea.position.set(.17+i*.10,1.043,-.88);cart.add(tea);}
@@ -139,13 +146,13 @@ let hovered=null, pointerInside=false;
 const tip=document.querySelector('#productTip');
 renderer.domElement.addEventListener('pointermove',e=>{pointer.set(e.clientX/innerWidth*2-1,1-e.clientY/innerHeight*2);pointerInside=true;});
 renderer.domElement.addEventListener('pointerleave',()=>{pointerInside=false;});
-renderer.domElement.addEventListener('click',()=>{if(isPlaying()&&hovered)pickProduct(hovered.userData.product.id);});
+renderer.domElement.addEventListener('click',()=>{if(isPlaying()&&enabled&&hovered)pickHandler?.(hovered.userData.product.id);});
 function trayChanged(){document.dispatchEvent(new CustomEvent('traychange',{detail:trayItems.map(o=>o.name)}));}
 export function pickProduct(id){
- if(!isPlaying())return false;
+ if(!isPlaying()||!enabled)return false;
  const index=products.findIndex(p=>p.id===id);if(index<0)return false;
  if(products[index].locked){document.dispatchEvent(new CustomEvent('cartnotice',{detail:'Bu ürün dükkân geliştirmesiyle açılır.'}));return false;}
- if(trayItems.length>=8){document.dispatchEvent(new CustomEvent('cartnotice',{detail:'Tepsi doldu. Önce birkaç ürünü geri al.'}));return false;}
+ if(trayItems.length>=10){document.dispatchEvent(new CustomEvent('cartnotice',{detail:'Tepsi doldu. Önce birkaç ürünü geri al.'}));return false;}
  const g=templates.get(id).clone(true);scene.add(g);displays[index].getWorldPosition(g.position);
  const n=trayItems.length,angle=n*2.4,r=n===0?0:.07+Math.floor(n/5)*.025;
  const end=trayPosition.clone().add(new THREE.Vector3(Math.cos(angle)*r,.025+Math.floor(n/4)*.065,Math.sin(angle)*r));
@@ -153,15 +160,30 @@ export function pickProduct(id){
 }
 // Copies share immutable geometry/materials with the eight reusable templates.
 function disposeCopy(object){object.removeFromParent();}
-export function removeLastTrayItem(){const item=trayItems.pop();if(!item)return;const i=flights.findIndex(f=>f.object===item);if(i>=0)flights.splice(i,1);disposeCopy(item);trayChanged();}
+export function removeLastTrayItem(index=trayItems.length-1){const [item]=trayItems.splice(index,1);if(!item)return;const i=flights.findIndex(f=>f.object===item);if(i>=0)flights.splice(i,1);disposeCopy(item);trayChanged();}
 export function clearTray(){while(trayItems.length)removeLastTrayItem();}
 export function updateCart(dt){
+ lidPivot.rotation.x=THREE.MathUtils.damp(lidPivot.rotation.x,cashOpen?-1.15:0,10,dt);
+ updateEffects(dt);
  hits.length=0;
- if(isPlaying()&&pointerInside){raycaster.setFromCamera(pointer,camera);raycaster.intersectObjects(targets,false,hits);}
+ if(isPlaying()&&enabled&&pointerInside){raycaster.setFromCamera(pointer,camera);raycaster.intersectObjects(targets,false,hits);}
  const next=hits.length?hits[0].object.userData.productRoot:null;
  if(next!==hovered){
-  for(const g of displays){const on=g===next;g.traverse(o=>{if(o.isMesh&&o.material.emissive){o.material.emissive.setHex(on?0xc78935:0x000000);o.material.emissiveIntensity=on?.22:0;}});}
+  for(const g of displays){const on=g===next;g.userData.outlines.forEach(o=>o.visible=on);g.traverse(o=>{if(o.isMesh&&o.material.emissive){o.material.emissive.setHex(on?0xc78935:0x000000);o.material.emissiveIntensity=on?.22:0;}});}
   hovered=next;renderer.domElement.style.cursor=hovered?'pointer':'default';tip.hidden=!hovered;if(hovered){const p=hovered.userData.product;tip.textContent=`${p.name} · ${p.price} ₺${p.locked?' · Kilitli':''}`;}}
  for(const g of displays){const on=g===hovered;g.position.y=THREE.MathUtils.damp(g.position.y,g.userData.baseY+(on?.022:0),12,dt);}
  for(let i=flights.length-1;i>=0;i--){const f=flights[i];f.age+=dt;const t=Math.min(1,f.age/.62),e=1-Math.pow(1-t,3);f.object.position.lerpVectors(f.start,f.end,e);f.object.position.y+=Math.sin(t*Math.PI)*.28;f.object.rotation.y=Math.sin(t*Math.PI)*.5;if(t===1)flights.splice(i,1);}
+}
+
+const deliveries=[];
+export function serveTray(){
+ while(trayItems.length){const object=trayItems.pop();const i=flights.findIndex(f=>f.object===object);if(i>=0)flights.splice(i,1);deliveries.push({object,start:object.position.clone(),age:0});}
+ trayChanged();
+}
+const sparkGeometry=new THREE.IcosahedronGeometry(.018,0),sparkMaterial=new THREE.MeshBasicMaterial({color:0xffd66d});
+const sparks=[];
+export function saleSparkles(){for(let i=0;i<20;i++){const object=new THREE.Mesh(sparkGeometry,sparkMaterial);object.position.set((Math.random()-.5)*.35,1.25,-1.3);scene.add(object);sparks.push({object,age:0,v:new THREE.Vector3((Math.random()-.5)*.7,.6+Math.random()*.5,(Math.random()-.5)*.4)});}}
+function updateEffects(dt){
+ for(let i=deliveries.length-1;i>=0;i--){const f=deliveries[i];f.age+=dt;const t=Math.min(1,f.age/.55),e=t*t*(3-2*t);f.object.position.set(THREE.MathUtils.lerp(f.start.x,0,e),THREE.MathUtils.lerp(f.start.y,1.4,e)+Math.sin(t*Math.PI)*.2,THREE.MathUtils.lerp(f.start.z,-1.5,e));f.object.scale.setScalar(Math.max(.001,1-t*t));if(t===1){disposeCopy(f.object);deliveries.splice(i,1);}}
+ for(let i=sparks.length-1;i>=0;i--){const p=sparks[i];p.age+=dt;p.v.y-=dt*1.3;p.object.position.addScaledVector(p.v,dt);p.object.rotation.x+=dt*7;p.object.scale.setScalar(Math.max(0,1-p.age/1.2));if(p.age>=1.2){p.object.removeFromParent();sparks.splice(i,1);}}
 }
