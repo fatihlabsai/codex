@@ -2,19 +2,17 @@
 
 Bu depo, [OpenAI Codex CLI](https://github.com/openai/codex) ve **gpt-6-astra** modeliyle üretilen tarayıcı projelerini tek yerde toplar. Her proje kendi klasöründe durur; yeni çalışmalar da buraya ayrı klasörler olarak eklenecektir.
 
-Orijinal bağımsız depolar ve GitHub Pages siteleri olduğu gibi yayında kalır.
-
 ## Projeler
 
-| Proje | Klasör | Kısa açıklama | Monorepo demosu | Bağımsız site |
-| --- | --- | --- | --- | --- |
-| **Astra City** | [`astra-city/`](./astra-city/) | Prosedürel, düşük poligonlu yaşayan bir şehir: trafik, gün–gece döngüsü, sürülebilir arabalar ve canlı minimap. | [canlı](https://fatihlabsai.github.io/codex/astra-city/) | [orijinal](https://fatihlabsai.github.io/astra-city/) |
-| **Yenimahalle 3D** | [`yenimahalle-3d/`](./yenimahalle-3d/) | Bakırköy Yenimahalle’nin OpenStreetMap verilerinden üretilmiş etkileşimli 3D mahalle modeli. | [canlı](https://fatihlabsai.github.io/codex/yenimahalle-3d/) | [orijinal](https://fatihlabsai.github.io/yenimahalle-3d/) |
-| **Simit Tezgâhı** | [`astra-simit-tezgahi/`](./astra-simit-tezgahi/) | Eminönü rıhtımında, simit arabasının arkasından oynanan 3D tarayıcı oyunu. | [canlı](https://fatihlabsai.github.io/codex/astra-simit-tezgahi/) | [orijinal](https://fatihlabsai.github.io/astra-simit-tezgahi/) |
+| Proje | Klasör | Kısa açıklama | Canlı demo |
+| --- | --- | --- | --- |
+| **Astra City** | [`astra-city/`](./astra-city/) | Prosedürel, düşük poligonlu yaşayan bir şehir: trafik, gün–gece döngüsü, sürülebilir arabalar ve canlı minimap. | [aç](https://fatihlabsai.github.io/codex/astra-city/) |
+| **Yenimahalle 3D** | [`yenimahalle-3d/`](./yenimahalle-3d/) | Bakırköy Yenimahalle’nin OpenStreetMap verilerinden üretilmiş etkileşimli 3D mahalle modeli. | [aç](https://fatihlabsai.github.io/codex/yenimahalle-3d/) |
+| **Simit Tezgâhı** | [`astra-simit-tezgahi/`](./astra-simit-tezgahi/) | Eminönü rıhtımında, simit arabasının arkasından oynanan 3D tarayıcı oyunu. | [oyna](https://fatihlabsai.github.io/codex/astra-simit-tezgahi/) |
 
 Ana sayfa: [https://fatihlabsai.github.io/codex/](https://fatihlabsai.github.io/codex/)
 
-Yeni bir Codex / Astra projesi bittiğinde buraya kendi klasörüyle eklenir. Mevcut klasörlerin bağımsız GitHub repoları silinmez.
+Yeni bir Codex / Astra projesi bittiğinde buraya kendi klasörüyle eklenir.
 
 ## Veri ve atıf
 
