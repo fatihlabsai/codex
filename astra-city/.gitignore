@@ -1,0 +1,11 @@
+prompt.txt
+prompt-with-preface.txt
+*.log
+*.png
+node_modules/
+package*.json
+.DS_Store
+drive-prompt.txt
+camera-fix-prompt.txt
+camera-fix-2-prompt.txt
+feature-prompt.txt
