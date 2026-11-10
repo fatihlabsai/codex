@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#9c302b"><title>Simit Tezgâhı · İstanbul</title>
+<link rel="icon" href="data:,"><link rel="stylesheet" href="css/style.css">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+</head>
+<body>
+<main id="viewport" aria-label="Üç boyutlu simit tezgâhı"></main>
+<div id="hud" hidden>
+<header><div class="panel brand">SİMİT TEZGÂHI <small>EMİNÖNÜ · İSTANBUL</small></div><div class="panel clock">☀ <span id="clock">07:00</span><small>YENİ BİR SABAH</small></div></header>
+<div id="productTip" hidden></div>
+<div class="tray panel"><span>TEPSİNİ HAZIRLA</span><strong id="trayCount">0 ürün</strong><button id="undoBtn" aria-label="Son ürünü geri al">↶ Geri al</button><button id="clearBtn">Tepsiyi boşalt</button></div>
+<footer><div id="productBar"></div><p>FARE <span>Etrafa bak</span> · TIKLA / 1–8 <span>Ürün seç</span> · ⌫ <span>Geri al</span></p></footer>
+</div>
+<section id="titleScreen"><div class="title-card"><div class="eyebrow">İSTANBUL’DA BİR SABAH</div><h1>Simit<br><em>Tezgâhı</em><span>✦</span></h1><p>Bir bardak çay, sıcacık bir simit.<br>Boğaz’ın kıyısında senin küçük tezgâhın.</p><button id="startBtn" disabled>Tezgâh hazırlanıyor…</button><div class="title-note">TAZE SİMİT · SICAK SOHBET · İSTANBUL</div></div><div class="location">41°01′ N &nbsp; 28°58′ E <b>EMİNÖNÜ RIHTIMI</b></div></section>
+<div id="notice" role="status" aria-live="polite"></div>
+<script type="module" src="js/main.js"></script>
+</body></html>

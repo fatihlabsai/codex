@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check js/main.js && node --check js/game.js && node --check js/ui.js && node --check js/audio.js && node --check js/cart.js && node --check js/people.js && node --check js/scene.js",
+    "test": "node tests/game.test.mjs"
+  }
+}
