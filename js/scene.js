@@ -10,7 +10,7 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.querySelector('#viewport').appendChild(renderer.domElement);
-export const camera = new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.025,1800);
+export const camera = new THREE.PerspectiveCamera(62,innerWidth/innerHeight,.025,1800);
 export const rig = new THREE.Group();
 rig.position.set(0,1.65,0); scene.add(rig); rig.add(camera);
 camera.rotation.order = 'YXZ';
@@ -28,24 +28,28 @@ sun.shadow.normalBias=.025; sun.shadow.bias=-.0002;
 const hemi = new THREE.HemisphereLight(0xc5e5f0,0x74634b,1.7);scene.add(hemi);
 scene.fog = new THREE.FogExp2(0xc3d4d4,.0017);
 const sunVector = new THREE.Vector3();
+const sunsetColor=new THREE.Color(0xffa057),blueSun=new THREE.Color(0x829acb),blueHemi=new THREE.Color(0x617cae),warmFog=new THREE.Color(0xe8b494),blueFog=new THREE.Color(0x667e9c);
 export function setTimeOfDay(hours){
  const h=THREE.MathUtils.clamp(Number(hours)||7,7,20), phase=(h-7)/13;
- const elevation=Math.sin(phase*Math.PI)*.95+.04;
+ const dusk=THREE.MathUtils.smoothstep(h,17.5,20);
+ const elevation=Math.sin(phase*Math.PI)*.95+.04-dusk*.25;
  sunVector.set(Math.cos(phase*Math.PI)*.85,elevation,-.6).normalize();
  sky.material.uniforms.sunPosition.value.copy(sunVector);
  sun.position.copy(sunVector).multiplyScalar(24);sun.target.position.set(0,0,-1);
- const dusk=THREE.MathUtils.smoothstep(h,18.5,20);
+
  const warmth=Math.max(1-Math.min(1,elevation*1.7),THREE.MathUtils.smoothstep(h,16.5,19));
- sun.color.set(0xfff5df).lerp(new THREE.Color(0xffa057),warmth).lerp(new THREE.Color(0x829acb),dusk);
+ sun.color.set(0xfff5df).lerp(sunsetColor,warmth).lerp(blueSun,dusk);
  sun.intensity=(2.8-warmth*.8)*(1-dusk*.85);
- hemi.intensity=1.5-dusk*.85;hemi.color.set(0xc5e5f0).lerp(new THREE.Color(0x617cae),dusk);
- scene.fog.color.set(0xc3d4d4).lerp(new THREE.Color(0xe8b494),warmth*.5).lerp(new THREE.Color(0x667e9c),dusk);
+ hemi.intensity=1.5-dusk*.85;hemi.color.set(0xc5e5f0).lerp(blueHemi,dusk);
+ scene.environmentIntensity=.45-dusk*.32;
+ sky.material.uniforms.turbidity.value=3+dusk*7;
+ scene.fog.color.set(0xc3d4d4).lerp(warmFog,warmth*.5).lerp(blueFog,dusk);
  renderer.toneMappingExposure=1.05-dusk*.3;
  sky.material.uniforms.rayleigh.value=1.6+dusk*1.8;
  return h;
 }
 let active=false, flyStart=-1, elapsed=0, yaw=0, pitch=0, targetYaw=0,targetPitch=0,shake=0;
-const basePitch=THREE.MathUtils.degToRad(-18), origin=new THREE.Vector3(4.6,5.5,5.2), destination=new THREE.Vector3(0,1.65,.65);
+const basePitch=THREE.MathUtils.degToRad(-12), origin=new THREE.Vector3(4.6,5.5,5.2), destination=new THREE.Vector3(0,1.65,.35);
 const look=new THREE.Vector3(0,1,-.85);
 rig.position.copy(origin);camera.lookAt(look);
 renderer.domElement.addEventListener('pointermove',e=>{

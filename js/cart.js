@@ -69,8 +69,10 @@ for(const x of [-.76,.76])for(const z of [-1.08,-.48])box(cart,.022,.66,.025,bra
 for(const y of [.31,.89])box(cart,1.56,.025,.018,cream,0,y,-.438);
 for(const x of [-.52,.52]){const wheel=cyl(cart,.145,.145,.055,black,x,.18,-.78);wheel.rotation.z=Math.PI/2;const hub=cyl(cart,.095,.095,.059,steel,x,.18,-.78);hub.rotation.z=Math.PI/2;const axle=cyl(cart,.025,.025,1.2,steel,0,.18,-.78);axle.rotation.z=Math.PI/2;}
 for(const x of [-.69,.69]){box(cart,.035,.035,.35,brass,x,.91,-.3);box(cart,.045,.048,.18,timber,x,.91,-.19);}
-box(cart,.72,.3,.018,cream,0,.61,-.433);
-sign(cart,.66,.25,'SİMİT\nİSTANBUL',0,.61,-.421,'#f6e8c5','#9f3027');
+box(cart,.72,.3,.018,cream,0,.61,-1.12);
+box(cart,.65,.19,.018,timber,0,.72,-.433);
+box(cart,.17,.025,.03,brass,0,.72,-.41);
+sign(cart,.66,.25,'SİMİT\nİSTANBUL',0,.61,-1.132,'#f6e8c5','#9f3027').rotation.y=Math.PI;
 // The far-side glass case leaves a clear, open serving worktop toward the vendor.
 box(cart,.76,.025,.29,brass,-.27,1.055,-.96);
 for(const x of [-.65,.11])for(const z of [-1.105,-.815])box(cart,.014,.31,.014,brass,x,1.22,z);
@@ -124,12 +126,14 @@ const displays=[],targets=[],trayItems=[],flights=[],templates=new Map();
 for(let i=0;i<products.length;i++){
  const p=products[i],template=makeProduct(p.id);templates.set(p.id,template);
  const g=template.clone(true);g.position.set(...positions[i]);cart.add(g);
+ if(['su','ayran','cay'].includes(p.id))g.scale.setScalar(1.22);
  g.userData={product:p,baseY:g.position.y};
  // Each display owns its materials, so highlighting never changes other stock.
  const materials=new Map();g.traverse(o=>{if(o.isMesh){if(!materials.has(o.material))materials.set(o.material,o.material.clone());o.material=materials.get(o.material);o.userData.productRoot=g;targets.push(o);}});
  displays.push(g);
 }
 for(let i=0;i<2;i++){const tea=makeProduct('cay');tea.position.set(.17+i*.10,1.043,-.88);cart.add(tea);}
+for(const [id,x,z] of [['su',.63,-1.04],['su',.73,-1.04],['ayran',.53,-.94],['ayran',.44,-.94],['acma',-.35,-.7],['pogaca',-.04,-.8]]){const i=products.findIndex(p=>p.id===id),g=makeProduct(id);g.position.set(x,id==='su'?1.115:1.045,z);if(['su','ayran'].includes(id))g.scale.setScalar(1.22);cart.add(g);g.traverse(o=>{if(o.isMesh){o.userData.productRoot=displays[i];targets.push(o);}});}
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(9,9),hits=[];
 let hovered=null, pointerInside=false;
 const tip=document.querySelector('#productTip');

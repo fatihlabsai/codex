@@ -10,3 +10,6 @@ footer p{margin:5px 0 0;font-size:8px}
 .tray{bottom:76px;padding:10px;gap:5px;left:14px}
 .tray strong{font-size:19px}
 @media(max-width:650px){#productBar button{padding:5px 2px;grid-template-columns:10px 1fr}#productBar b{font-size:9px}.tray{bottom:70px}}
+#speech{position:absolute;transform:translate(-50%,-100%);max-width:270px;width:max-content;padding:13px 17px;border-radius:15px;background:#fff2d9;color:#293c38;border:2px solid #cda35b;box-shadow:0 4px 20px #14252240;font-size:14px;line-height:1.4;text-align:center;pointer-events:none}
+#speech:after{content:'';position:absolute;bottom:-9px;left:50%;border-left:8px solid transparent;border-right:8px solid transparent;border-top:9px solid #fff2d9}
+#animalNotice{position:absolute;top:110px;right:22px;background:#803b29ed;padding:12px 16px;border:1px solid #ecc887;border-radius:12px;font-size:13px}
