@@ -14,7 +14,7 @@ So: a real-time 3D game in Three.js. NO photos, NO 2D image sprites as scene art
   - js/cart.js — the simit cart + 3D products + raycast picking + pick-up tweens to the serving tray + money/cash drawer 3D or HUD
   - js/city.js — Istanbul backdrop (Eminönü waterfront, Bosphorus water shader, ferry, gulls, Galata Tower, Yeni Cami/Süleymaniye domes+minarets, hills of houses, cobblestones, street lamps)
   - js/people.js — low-poly humanoid customers (procedural), walk cycle, queue, cat + seagull thieves
-  - js/game.js — gameplay rules/state (ported from _legacy_reference.html), no Three.js inside if possible
+  - js/game.js — gameplay rules/state (ported from the earlier 2D version), no Three.js inside if possible
   - js/ui.js — DOM HUD, speech bubbles projected over heads, popups, end-of-day shop
   - js/audio.js — WebAudio synthesized sounds (start after first click)
 - Performance: target 60fps on a normal laptop. Merge static geometry, instancing for repeated items (cobbles, windows, houses, sesame), shadow map 2048 only on the sun with tight frustum around the cart area, pixelRatio min(devicePixelRatio,1.5). Avoid per-frame allocations.
@@ -32,7 +32,7 @@ Classic red Istanbul simit cart: red lacquered body with white/cream trim and go
 Prices TL: simit 20, cay 15, su 10, acma 25, pogaca 25, kumru 90, ayran 20, peynir 15. kumru & peynir start locked (unlock in shop).
 Each product: a 3D model built procedurally (simit = torus with sesame-dot canvas texture + slight twist bumps; çay = tulip glass (LatheGeometry) with amber tea + saucer; su = PET bottle lathe + blue cap + label; açma = puffier glossy twisted torus; poğaça = squashed ellipsoid buns with black seeds; kumru = sesame bun sandwich with sucuk/tomato/cheese layers; ayran = cup with foil lid; peynir = white wedge on paper). Hover: highlight/emissive outline + lift; click/1–8: a copy flies with an arc tween onto the tepsi.
 
-## Gameplay (keep from legacy; see _legacy_reference.html)
+## Gameplay
 Orders, serving tray, Ver (Enter), payment (cash/coins/card/euro tourist), change-making with denominations 1,5,10,20,50,100,200 TL, wrong change consequences, patience bars, tips, streak, reputation stars, day cycle 07:00–20:00 (~3.5 real minutes), morning/evening rush, simit stock & "Fırından taze simit" restock, end-of-day summary + upgrade shop, localStorage save, thieves (cat goes for peynir/kumru, seagull dives at simits; click it or Space to shoo; feeding cat = karma), customer types: ogrenci, lise, isadami, teyze, turist (English), balikci, emekli, taksici — each with dialogue lines (keep them), patience, payment style, tip.
 Astra's twists (keep all five): Askıda simit, Son düdüğün çayları (ferry crew order), Gazete kapanır sohbet açılır (noon ritual), İyiliğin akşam hesabı (neighbourhood bond), Dört dörtlük servis (streak bonus). You may add new 3D-specific twists.
 
