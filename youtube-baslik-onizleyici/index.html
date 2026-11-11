@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YouTube başlık önizleyici</title>
+<style>
+:root{font-family:Roboto,Arial,sans-serif;color:#202622;background:#f5f6f3;font-synthesis:none;color-scheme:light}*{box-sizing:border-box}body{margin:0}main{max-width:1240px;margin:auto;padding:36px 24px}header{display:flex;align-items:center;gap:13px;margin-bottom:30px}.logo{background:#e64936;color:white;border-radius:12px;width:44px;height:44px;display:grid;place-items:center;font-size:22px}h1{font-size:23px;letter-spacing:-.7px;margin:0 0 6px}p{margin:0;line-height:1.55}.subtitle,.muted{color:#68716b;font-size:13px}.offline{margin-left:auto;font-size:12px;color:#47614c;border:1px solid #d8e1d7;border-radius:20px;padding:7px 11px;white-space:nowrap}.workspace{display:grid;grid-template-columns:minmax(300px, .9fr) minmax(0,1.25fr);gap:22px;align-items:start}.panel{background:white;border:1px solid #dfe4dc;border-radius:16px;padding:24px}.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:24px}h2{font-size:16px;margin:0;font-weight:600}.step{color:#849184;font-size:12px;margin-right:8px}button{font:inherit;cursor:pointer;border:1px solid #dce3d9;background:#f8faf6;border-radius:7px;padding:8px 11px;font-size:12px;color:#38513d}button:hover{background:#edf2e9}button:focus-visible,a:focus-visible{outline:3px solid #66926d;outline-offset:3px}.field{margin-bottom:24px}label{display:block;font-size:14px;font-weight:600;margin-bottom:9px}textarea{width:100%;display:block;resize:vertical;border:1px solid #d8dfd5;border-radius:9px;background:#fcfdfb;padding:12px;font:14px/1.6 Roboto,Arial,sans-serif;color:#202622;min-height:76px}textarea:focus{outline:2px solid #739779;outline-offset:1px}textarea::placeholder{color:#8a918b}#description{min-height:170px}#tags{min-height:86px}.counter{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#68716b;margin-top:8px;font-variant-numeric:tabular-nums}.counter strong{font-weight:500;color:#354f3c}.hint{font-size:11px;color:#737b74;line-height:1.6;margin-top:8px}.error{color:#b6352c;font-size:12px;margin-top:7px;line-height:1.5}.over textarea,textarea[aria-invalid="true"]{border-color:#ca5145;background:#fffaf9}.over .counter,.over .counter strong{color:#b6352c}.save{font-size:11px;color:#68716b;border-top:1px solid #edf0e9;padding-top:15px}.preview-panel{padding-bottom:20px}.preview-panel .section-head{margin-bottom:12px}.notice{font-size:12px;color:#667063;line-height:1.6;margin-bottom:22px}.mock-label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;margin:0 0 12px}.badge{font-size:10px;font-weight:400;color:#6d786f;background:#f0f3ed;border-radius:4px;padding:3px 6px}.mobile{width:310px;max-width:100%;border:1px solid #e3e6e0;border-radius:12px;overflow:hidden;margin:0 auto 12px}.thumbnail{background:linear-gradient(135deg,#e4e7e3,#d3d8d1);aspect-ratio:16/9;display:grid;place-items:center;position:relative;color:#8c968b}.play{width:40px;height:29px;border:1px solid #b3bcb0;border-radius:8px;display:grid;place-items:center;font-size:13px}.duration{position:absolute;right:8px;bottom:8px;background:#4e574e;color:white;font-size:10px;border-radius:3px;padding:3px 4px}.mobile-body{padding:14px 15px}.video-title{margin:0;font-size:14px;line-height:20px;font-weight:500;overflow-wrap:anywhere;white-space:pre-wrap}.clamp{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;max-height:40px}.channel{font-size:11px;color:#727772;margin-top:7px;line-height:1.5}.description-box{background:#f3f4f1;border-radius:8px;padding:10px;margin-top:13px}.snippet{font-size:12px;line-height:18px;white-space:pre-wrap;overflow-wrap:anywhere;margin:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;max-height:54px;overflow:hidden}.snippet.expanded{display:block;max-height:none}.more{padding:4px 0 0;border:0;background:transparent;color:#444e45;font-size:11px;font-weight:600}.more[hidden]{display:none}.spec{font-size:10px;line-height:1.5;color:#7a8279;text-align:center;margin-bottom:24px}.desktop-scroll{overflow-x:auto;padding-bottom:8px}.desktop-card{width:550px;display:grid;grid-template-columns:150px 1fr;gap:14px}.desktop-card .thumbnail{border-radius:9px;align-self:start}.desktop-card .video-title{font-size:18px;line-height:24px;max-height:48px}.desktop-description{width:550px;margin-top:14px}.desktop-description .snippet{font-size:13px;line-height:20px;max-height:60px}.desktop-description .snippet.expanded{max-height:none}.desktop-spec{text-align:left;margin:4px 0 0}footer{font-size:11px;color:#727a71;line-height:1.8;margin-top:24px;max-width:1080px}footer a{color:#506c54;text-underline-offset:3px}footer strong{font-weight:600;color:#566050}@media(min-width:1150px){.desktop-card,.desktop-description{width:100%}}@media(max-width:800px){main{padding:24px 16px}.workspace{grid-template-columns:1fr}.panel{padding:20px}.offline{display:none}h1{font-size:20px}header{margin-bottom:22px}}@media(prefers-reduced-motion:no-preference){textarea,button{transition:border-color .15s,background .15s}}
+</style>
+</head>
+<body>
+<main>
+<header><div class="logo" aria-hidden="true">▶</div><div><h1>YouTube başlık önizleyici</h1><p class="subtitle">Yaz, kontrol et, nasıl göründüğünü gör.</p></div><span class="offline">● Çevrimdışı çalışır</span></header>
+<div class="workspace">
+<section class="panel" aria-labelledby="editor-heading">
+<div class="section-head"><h2 id="editor-heading"><span class="step">01</span>Video bilgileri</h2><button id="sample" type="button">Örnek doldur</button></div>
+<div class="field" id="title-field"><label for="title">Başlık</label><textarea id="title" rows="3" placeholder="İzleyicinin dikkatini çeken bir başlık…" aria-describedby="title-count title-error"></textarea><div class="counter" id="title-count" aria-live="polite"></div><p id="title-error" class="error" hidden></p><p class="hint">Önemli kelimeleri başa koy. Görünen kısmı sağdaki önizlemelerden kontrol et.</p></div>
+<div class="field" id="description-field"><label for="description">Açıklama</label><textarea id="description" rows="7" placeholder="Videonun konusunu ilk birkaç satırda anlat…" aria-describedby="description-count description-error"></textarea><div class="counter" id="description-count" aria-live="polite"></div><p id="description-error" class="error" hidden></p></div>
+<div class="field" id="tags-field"><label for="tags">Etiketler</label><textarea id="tags" rows="3" placeholder="içerik üretimi, video, YouTube ipuçları" aria-describedby="tags-count tags-hint"></textarea><div class="counter" id="tags-count" aria-live="polite"></div><p class="hint" id="tags-hint">Virgülle ayır. Etiketlerin başındaki ve sonundaki boşluklar temizlenir; boş öğeler sayılmaz. Aradaki virgüller +1, içinde boşluk olan her etiketin örtük tırnakları +2 sayılır. Tırnak eklemene gerek yok.</p></div>
+<p class="save" id="save-status" role="status">Alanlar yalnızca bu tarayıcıda otomatik kaydedilir.</p>
+</section>
+<section class="panel preview-panel" aria-labelledby="preview-heading">
+<div class="section-head"><h2 id="preview-heading"><span class="step">02</span>Görünüm önizlemesi</h2><span class="badge">Yaklaşık yerleşim</span></div>
+<p class="notice">Kesilme noktası resmî bir karakter sınırı değildir. Ekran, yazı tipi ve harf genişliğiyle değişir. Açıklama örnekleri “daha fazla” öncesini gösterir.</p>
+<h3 class="mock-label">Mobil kart <span class="badge">Ana sayfa / arama</span></h3>
+<div class="mobile"><div class="thumbnail" aria-label="Video küçük resmi yer tutucusu"><span class="play" aria-hidden="true">▶</span><span class="duration">08:24</span></div><div class="mobile-body"><h4 class="video-title clamp" data-title></h4><p class="channel">Kanal adı · 12 B görüntüleme · 2 gün önce</p><div class="description-box"><p class="snippet" id="mobile-description" data-description></p><button class="more" type="button" aria-expanded="false" aria-controls="mobile-description">…daha fazla</button></div></div></div>
+<p class="spec">Başlık: yaklaşık 278 px · 14 px · 2 satır<br>Açıklama örneği: 3 satır</p>
+<h3 class="mock-label">Masaüstü arama <span class="badge">Geniş görünüm</span></h3>
+<div class="desktop-scroll" tabindex="0" role="region" aria-label="Masaüstü önizlemesi; dar ekranlarda yatay kaydırılabilir"><div class="desktop-card"><div class="thumbnail" aria-label="Video küçük resmi yer tutucusu"><span class="play" aria-hidden="true">▶</span><span class="duration">08:24</span></div><div><h4 class="video-title clamp" data-title></h4><p class="channel">12 B görüntüleme · 2 gün önce</p><p class="channel">● &nbsp; Kanal adı</p></div></div><div class="description-box desktop-description"><p class="snippet" id="desktop-description" data-description></p><button class="more" type="button" aria-expanded="false" aria-controls="desktop-description">…daha fazla</button></div></div>
+<p class="spec desktop-spec">Başlık: geniş kutu · 18 px · 2 satır. Açıklama örneği: 3 satır.<br>Dar ekranlarda masaüstü önizlemesini yana kaydırabilirsin.</p>
+</section>
+</div>
+<footer><strong>Resmî sınırlar:</strong> Başlık 100, açıklama 5.000 karakter: <a href="https://support.google.com/youtube/answer/57407">YouTube Help: video yükleme</a>, <a href="https://support.google.com/youtube/answer/57404">video düzenleme</a> ve <a href="https://support.google.com/youtube/answer/12948449">açıklama ipuçları</a>. Etiketler toplam 500 karakter; virgül ve örtük tırnak hesabı: <a href="https://developers.google.com/youtube/v3/docs/videos#snippet.tags[]">YouTube Data API</a>. Başlık geçersiz karakter içeremez; API başlık ve açıklamada &lt; ve &gt; karakterlerini yasaklar. Sayaçlar boşluklar dahil Unicode kod noktalarını sayar. YouTube sabit bir görünür karakter sayısı yayımlamaz; bu önizlemeler resmî kesilme eşikleri değildir. Kaynak bağlantıları internet gerektirir.</footer>
+</main>
+<script>
+'use strict';
+const fields = Object.fromEntries(['title', 'description', 'tags'].map(id => [id, document.getElementById(id)]));
+const limits = {title: 100, description: 5000, tags: 500};
+const storageKey = 'youtube-baslik-onizleyici-v1';
+const countPoints = text => Array.from(text).length;
+// Comma-separated input becomes a list. Spaces inside a tag are preserved.
+function parseTags(value) {
+  return value.split(',').map(tag => tag.trim()).filter(Boolean);
+}
+function countTags(value) {
+  const tags = parseTags(value);
+  return tags.reduce((total, tag) => total + countPoints(tag) + (tag.includes(' ') ? 2 : 0), 0) + Math.max(0, tags.length - 1);
+}
+function updateCounter(id) {
+  const value = fields[id].value;
+  const used = id === 'tags' ? countTags(value) : countPoints(value);
+  const remaining = limits[id] - used;
+  const invalid = id !== 'tags' && /[<>]/.test(value);
+  document.getElementById(id + '-field').classList.toggle('over', remaining < 0);
+  fields[id].setAttribute('aria-invalid', String(remaining < 0 || invalid));
+  const count = document.getElementById(id + '-count');
+  count.replaceChildren();
+  const total = document.createElement('strong');
+  total.textContent = `${used.toLocaleString('tr-TR')} / ${limits[id].toLocaleString('tr-TR')} kullanıldı`;
+  const rest = document.createElement('span');
+  rest.textContent = remaining < 0 ? `${-remaining} karakter aşıldı` : `${remaining.toLocaleString('tr-TR')} karakter kaldı`;
+  count.append(total, rest);
+  if (id !== 'tags') {
+    const error = document.getElementById(id + '-error');
+    error.hidden = !invalid;
+    error.textContent = invalid ? '< ve > karakterleri kullanılamaz. Metin değiştirilmedi.' : '';
+  }
+}
+function refreshDisclosure() {
+  document.querySelectorAll('.more').forEach(button => {
+    const snippet = document.getElementById(button.getAttribute('aria-controls'));
+    if (button.getAttribute('aria-expanded') === 'true') return;
+    button.hidden = snippet.scrollHeight <= snippet.clientHeight + 1;
+  });
+}
+function render() {
+  Object.keys(fields).forEach(updateCounter);
+  document.querySelectorAll('[data-title]').forEach(node => {
+    node.textContent = fields.title.value || 'Video başlığın burada görünecek';
+  });
+  document.querySelectorAll('[data-description]').forEach(node => {
+    node.textContent = fields.description.value || 'Açıklamanın ilk satırları burada görünecek. İzleyiciye videoda neler bulacağını anlat.';
+  });
+  requestAnimationFrame(refreshDisclosure);
+}
+function save() {
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(Object.fromEntries(Object.entries(fields).map(([id, field]) => [id, field.value]))));
+    document.getElementById('save-status').textContent = 'Bu tarayıcıya kaydedildi · Verilerin cihazından gönderilmez.';
+  } catch {
+    document.getElementById('save-status').textContent = 'Tarayıcı kayda izin vermiyor. Alanlar bu oturumda çalışır; kapanınca kaybolabilir.';
+  }
+}
+Object.values(fields).forEach(field => field.addEventListener('input', () => { render(); save(); }));
+document.querySelectorAll('.more').forEach(button => button.addEventListener('click', () => {
+  const expanded = button.getAttribute('aria-expanded') !== 'true';
+  button.setAttribute('aria-expanded', String(expanded));
+  document.getElementById(button.getAttribute('aria-controls')).classList.toggle('expanded', expanded);
+  button.textContent = expanded ? 'Daha az göster' : '…daha fazla';
+  refreshDisclosure();
+}));
+document.getElementById('sample').addEventListener('click', () => {
+  fields.title.value = 'Telefonla daha iyi videolar çek: ışık, ses ve kurgu için evde deneyebileceğin pratik içerik üretimi önerileri';
+  fields.description.value = 'Telefonunla daha iyi videolar çekmek için pahalı ekipmanlara ihtiyacın yok. Bu videoda doğal ışığı kullanmayı, temiz ses kaydetmeyi ve hikâyeni sade bir kurguyla anlatmayı birlikte deniyoruz.\n\n00:00 Başlangıç\n01:20 Pencere ışığıyla çekim\n03:45 Daha temiz ses\n05:30 Kurgu ve hikâye\n\nBir sonraki çekiminde bu önerileri dene. En çok işine yarayan ipucunu yorumlarda paylaş!';
+  fields.tags.value = 'video çekimi, içerik üretimi, telefonla video, ışık, ses, kurgu, YouTube';
+  render(); save();
+});
+try {
+  const stored = JSON.parse(localStorage.getItem(storageKey) || 'null');
+  if (stored && typeof stored === 'object') {
+    Object.keys(fields).forEach(id => { if (typeof stored[id] === 'string') fields[id].value = stored[id]; });
+  }
+} catch {
+  document.getElementById('save-status').textContent = 'Kaydedilen alanlar okunamadı. Düzenlemeye devam edebilirsin.';
+}
+window.addEventListener('resize', refreshDisclosure);
+if (document.fonts) document.fonts.ready.then(refreshDisclosure);
+render();
+</script>
+</body>
+</html>
